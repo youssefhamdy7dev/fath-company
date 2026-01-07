@@ -46,8 +46,8 @@ class TruckController extends Controller
         );
 
         // 3️⃣ Manually paginate both collections
+        $unfinishedTrucks = $this->paginateCollection($unfinished, 10, 'unfinished_page');
         $finishedTrucks   = $this->paginateCollection($finished, 5, 'finished_page');
-        $unfinishedTrucks = $this->paginateCollection($unfinished, 5, 'unfinished_page');
 
         return view('pages.trucks.index', compact(
             'finishedTrucks',
