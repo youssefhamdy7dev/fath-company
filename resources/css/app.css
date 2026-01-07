@@ -1,0 +1,336 @@
+/* ==========================================================================
+   📦 Imports
+   ========================================================================== */
+@import "bootstrap/dist/css/bootstrap.rtl.min.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import "choices.js/public/assets/styles/choices.min.css";
+
+/* Laravel Blade Sources (for Tailwind-style scanning, optional) */
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/* 🌍 Global Resets */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 🧱 Base Layout */
+html,
+body {
+    height: 100%;
+    direction: rtl;
+    text-align: right;
+    background-color: #eee;
+    color: #212529;
+    font-size: large;
+    /* font-family: "Cairo", sans-serif; */
+}
+
+/* 🏷️ Branding */
+.brand {
+    font-family: "Reem Kufi Fun", "Cairo", sans-serif;
+    font-weight: 600;
+}
+
+/* Input & Form Styling */
+/* Hide arrows (Chrome, Safari, Edge, Opera) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Hide arrows (Firefox) */
+input[type="number"] {
+    -moz-appearance: textfield;
+    direction: rtl;
+}
+
+/* Consistent form direction and border */
+input[type="checkbox"],
+input[type="text"],
+input[type="password"],
+input[type="file"],
+input[type="date"],
+input[type="number"],
+.form-select,
+textarea {
+    direction: rtl;
+    text-align: right;
+    border: 1px solid rgba(33, 37, 41, 0.53);
+}
+
+.customer-link {
+    text-decoration: none;
+    color: black;
+    font-weight: bolder;
+}
+
+.customer-link:hover {
+    text-decoration: underline;
+    color: var(--bs-primary);
+}
+
+/* Small helper class for form spacing */
+.form-div {
+    margin-top: 10px;
+}
+
+/* Card Styling */
+.card-background {
+    background: #f2f8ff !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(33, 37, 41, 0.16) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.33),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    padding: 1rem !important;
+}
+
+/* --------------------------------------------------
+   ✨ Interactive Animations & Hover Effects
+   -------------------------------------------------- */
+
+/* Fade-up animation for alerts & cards */
+p,
+tr,
+table,
+.table,
+.table-responsive,
+.animated-alert,
+.card {
+    animation: fadeUp 0.5s ease-in-out forwards !important;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Subtle hover scale for cards and buttons */
+.btn:hover {
+    transform: scale(1.02);
+    transition: all 0.25s ease-in-out;
+}
+
+/* Smooth fade on hover links */
+a:hover {
+    opacity: 0.85;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Elegant shadow for cards and form containers */
+.card {
+    border-radius: 1rem;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Button shadow for 3D view */
+.btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 10px;
+    box-shadow: 0 3px #00000040;
+}
+
+/* Polished input focus style */
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+/* Fade-in main content on page load */
+main {
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.tabs-container {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    background: #d4d4d4;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tab {
+    padding: 10px 30px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    text-align: center;
+    color: #555;
+}
+
+.tab.active {
+    background: #007bff;
+    /* Highlight color */
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.tab:hover:not(.active) {
+    background: #e0e0e0;
+}
+
+.section-separator {
+    width: 80%;
+    height: 2px;
+    margin: 0 auto;
+    background: #212529;
+    border-radius: 5px;
+}
+
+/* Chips */
+.chip {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 0.9rem;
+    border-radius: 20px;
+    border: 2px solid;
+    font-weight: 500;
+    background: transparent;
+    cursor: default;
+}
+
+.chip-lime {
+    color: #00ff00;
+    border-color: #00ff00;
+}
+
+.chip-danger {
+    color: var(--bs-danger);
+    border-color: var(--bs-danger);
+}
+
+.chip-primary {
+    color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.chip-warning {
+    color: var(--bs-warning);
+    border-color: var(--bs-warning);
+}
+
+tr,
+th {
+    cursor: default;
+}
+
+.pagination {
+    direction: rtl !important;
+}
+
+.pagination .page-link {
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+/* --------------------------------------------------
+   🔧 Choices.js RTL + Bootstrap 5 Styling Fixes
+   -------------------------------------------------- */
+
+/* Make container match Bootstrap .form-select */
+.choices__inner {
+    font-size: large;
+    min-height: calc(1.5em + 0.75rem + 2px) !important;
+    padding: 0.375rem 0.75rem !important;
+    border-radius: 0.375rem !important;
+    border: 1px solid rgba(33, 37, 41, 0.53) !important;
+    background-color: #fff !important;
+    text-align: right !important;
+    direction: rtl !important;
+}
+
+/* Fix dropdown alignment */
+.choices__list--dropdown {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* Make search field RTL */
+.choices__list--dropdown .choices__item.choices__item--selectable {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* Remove ugly blue outline */
+.choices__inner:focus,
+.is-focused .choices__inner,
+.is-open .choices__inner {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Remove Choices default underline border */
+.choices[data-type*="select-one"] .choices__inner {
+    padding-bottom: 0.375rem !important;
+}
+
+/* Make dropdown look like Bootstrap */
+.choices__list--dropdown {
+    border: 1px solid rgba(33, 37, 41, 0.25) !important;
+    border-radius: 0.375rem !important;
+    margin-top: 2px !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Dropdown items — Bootstrap-like hover */
+.choices__list--dropdown .choices__item--selectable {
+    padding: 8px 12px !important;
+}
+
+.choices__list--dropdown .choices__item--selectable:hover {
+    background-color: #f0f0f0 !important;
+}
+
+/* Chevron icon position fix for RTL */
+.choices[data-type*="select-one"]::after {
+    left: 0.75rem !important;
+    right: auto !important;
+}
+
+/* Move arrow to left (RTL) */
+.choices[data-type*="select-one"] .choices__inner {
+    padding-left: 2rem !important;
+}
+
+/* Ensure selected item text doesn't overflow oddly */
+.choices__inner .choices__item--selectable {
+    white-space: nowrap !important;
+}
