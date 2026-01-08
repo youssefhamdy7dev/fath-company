@@ -14,11 +14,11 @@
                         <th>الصنف</th>
                         <th>الزبون</th>
                         <th>عدد</th>
-                        <th>نوع البرنيك</th>
                         <th>الوزن</th>
                         <th>الفئة</th>
                         <th class="text-danger">إجمالى</th>
                         <th>النوع</th>
+                        <th>تاريخ الشراء</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -51,9 +51,6 @@
                                 <td class="{{ $dangerClass }}">{{ transform_numeric_value($cp->number_of_boxes) }}
                                 </td>
 
-                                {{-- box type --}}
-                                <td class="{{ $dangerClass }}">{{ $cp->box_type_name }}</td>
-
                                 {{-- total weight --}}
                                 <td class="{{ $dangerClass }}" class="fw-bolder fs-5">
                                     {{ transform_numeric_value($cp->total_weight) ?? '-' }}</td>
@@ -70,6 +67,11 @@
 
                                 {{-- class name --}}
                                 <td class="{{ $dangerClass }}">{{ $cp->computed_class_name }}</td>
+
+                                {{-- date --}}
+                                <td class="{{ $dangerClass }}">
+                                    {{ transform_numbers($cp->date->locale('ar')->translatedFormat('l Y/m/d')) }}
+                                </td>
 
                                 {{-- actions --}}
                                 <td class="d-flex justify-content-center gap-2">
