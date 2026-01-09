@@ -1,11 +1,7 @@
-* text=auto eol=lf
+# Force Blade templates to count as PHP
+*.blade.php linguist-language=PHP
 
-*.blade.php diff=html
-*.css diff=css
-*.html diff=html
-*.md diff=markdown
-*.php diff=php
-
-/.github export-ignore
-CHANGELOG.md export-ignore
-.styleci.yml export-ignore
+# Ignore vendor & storage from language stats
+/vendor/* linguist-vendored
+/storage/* linguist-vendored
+/node_modules/* linguist-vendored
