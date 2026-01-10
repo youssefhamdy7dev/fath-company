@@ -36,13 +36,14 @@ This project reflects a real-world business workflow and focuses on clean backen
 - AJAX-based filtering and pagination
 - Arabic language support
 - Responsive and clean UI
+- Designed and implemented to align closely with user requirements and expectations
 
 ---
 
 ## 🛠 Tech Stack
 
 - **Backend:** PHP 8.x, Laravel
-- **Frontend:** Blade, JavaScript, AJAX
+- **Frontend:** Blade, HTML, CSS, Bootstrap.3x ,JavaScript, AJAX
 - **Database:** MySQL
 - **Version Control:** Git & GitHub
 - **Local Environment:** XAMPP / Laravel Artisan
