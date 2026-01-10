@@ -15,7 +15,6 @@ This project reflects a real-world business workflow and focuses on clean backen
 
 -   Add, edit, and manage customers
 -   Track customer balances and transactions
--   Customer ledger (credits & debits)
 
 ### 🚚 Truck & Logistics Management
 
@@ -48,7 +47,7 @@ This project reflects a real-world business workflow and focuses on clean backen
 ## 🛠 Tech Stack
 
 -   **Backend:** PHP 8.x, Laravel
--   **Frontend:** Blade, HTML, CSS, Bootstrap.3x ,JavaScript, AJAX
+-   **Frontend:** Blade, HTML, CSS, Bootstrap5.3x ,JavaScript, AJAX
 -   **Database:** MySQL
 -   **Version Control:** Git & GitHub
 -   **Local Environment:** XAMPP / Laravel Artisan
