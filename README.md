@@ -115,11 +115,11 @@ Run migrations:
 
 ## 👨‍💻 Author
 
-Youssef Hamdy Ahmed Mohamed
-Backend Web Developer (PHP & Laravel)
-📍 Cairo, Egypt
-📧 Email: youssefhamdy.dev7@gmail.com
-🔗 GitHub: https://github.com/youssefhamdy7dev
+- Youssef Hamdy Ahmed Mohamed
+- Backend Web Developer (PHP & Laravel)
+- 📍 Cairo, Egypt
+- 📧 Email: youssefhamdy.dev7@gmail.com
+- 🔗 GitHub: https://github.com/youssefhamdy7dev
 
 ---
 
