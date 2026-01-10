@@ -12,60 +12,65 @@ This project reflects a real-world business workflow and focuses on clean backen
 ## 🚀 Features
 
 ### 👥 Customer Management
-- Add, edit, and manage customers
-- Track customer balances and transactions
-- Customer ledger (credits & debits)
+
+-   Add, edit, and manage customers
+-   Track customer balances and transactions
+-   Customer ledger (credits & debits)
 
 ### 🚚 Truck & Logistics Management
-- Manage trucks and their operational status
-- Track finished and unfinished truck operations
-- Optimized pagination and filtering
+
+-   Manage trucks and their operational status
+-   Track finished and unfinished truck operations
+-   Optimized pagination and filtering
 
 ### 📦 Purchases & Inventory
-- Record customer purchases
-- Track box classes, quantities, and prices
-- Automatic calculations for totals and summaries
+
+-   Record customer purchases
+-   Track box classes, quantities, and prices
+-   Automatic calculations for totals and summaries
 
 ### 💰 Financial Tracking
-- Accurate balance calculations
-- Date-based filtering for transactions
-- Clear financial records per customer
+
+-   Accurate balance calculations
+-   Date-based filtering for transactions
+-   Clear financial records per customer
 
 ### 🖥 User Interface
-- Blade templating engine
-- AJAX-based filtering and pagination
-- Arabic language support
-- Responsive and clean UI
-- Designed and implemented to align closely with user requirements and expectations
+
+-   Blade templating engine
+-   AJAX-based filtering and pagination
+-   Arabic language support
+-   Responsive and clean UI
+-   Designed and implemented to align closely with user requirements and expectations
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Backend:** PHP 8.x, Laravel
-- **Frontend:** Blade, HTML, CSS, Bootstrap.3x ,JavaScript, AJAX
-- **Database:** MySQL
-- **Version Control:** Git & GitHub
-- **Local Environment:** XAMPP / Laravel Artisan
+-   **Backend:** PHP 8.x, Laravel
+-   **Frontend:** Blade, HTML, CSS, Bootstrap.3x ,JavaScript, AJAX
+-   **Database:** MySQL
+-   **Version Control:** Git & GitHub
+-   **Local Environment:** XAMPP / Laravel Artisan
 
 ---
 
 ## 📂 Project Structure Highlights
 
-- MVC architecture (Models, Views, Controllers)
-- Form Request validation
-- Eloquent relationships
-- Reusable Blade components
-- Clean and readable codebase
+-   MVC architecture (Models, Views, Controllers)
+-   Form Request validation
+-   Eloquent relationships
+-   Reusable Blade components
+-   Clean and readable codebase
 
 ---
 
 ## ⚙️ Installation (Local Setup)
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/youssefhamdy7dev/fath-company.git
-   ```
+    ```bash
+    git clone https://github.com/youssefhamdy7dev/fath-company.git
+    ```
 2. Navigate to the project directory:
     ```bash
     cd fath-company
@@ -83,43 +88,43 @@ This project reflects a real-world business workflow and focuses on clean backen
     php artisan key:generate
     ```
 6. Configure your database credentials in .env
-Run migrations:
-    ```bash
+   Run migrations:
+   `bash
     php artisan migrate
-    ```
+    `
 7. Start the development server:
     ```bash
     php artisan serve
     ```
-    
+
 ---
 
 ## 🎯 Project Goals
 
-- Build a real-world Laravel application
-- Apply best practices in backend development
-- Demonstrate professional Laravel skills
-- Provide a scalable foundation for future features
+-   Build a real-world Laravel application
+-   Apply best practices in backend development
+-   Demonstrate professional Laravel skills
+-   Provide a scalable foundation for future features
 
 ---
 
 ## 🔮 Future Improvements
 
-- Authentication & role-based access
-- Advanced reporting (PDF / Excel export)
-- REST API for mobile or third-party integrations
-- Improved UI/UX
-- Docker & cloud deployment
+-   Authentication & role-based access
+-   Advanced reporting (PDF / Excel export)
+-   REST API for mobile or third-party integrations
+-   Improved UI/UX
+-   Docker & cloud deployment
 
 ---
 
 ## 👨‍💻 Author
 
-- Youssef Hamdy Ahmed Mohamed
-- Backend Web Developer (PHP & Laravel)
-- 📍 Cairo, Egypt
-- 📧 Email: youssefhamdy.dev7@gmail.com
-- 🔗 GitHub: https://github.com/youssefhamdy7dev
+**Youssef Hamdy Ahmed Mohamed**
+
+-   Backend Web Developer (PHP & Laravel)
+-   📍 Cairo, Egypt
+-   📧 Email: youssefhamdy.dev7@gmail.com
+-   🔗 GitHub: https://github.com/youssefhamdy7dev
 
 ---
-
