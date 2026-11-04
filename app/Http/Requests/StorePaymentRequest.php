@@ -32,7 +32,7 @@ class StorePaymentRequest extends FormRequest
                 Rule::unique('customer_payments')
                     ->where(fn($q) => $q->where('customer_id', $this->customer_id))
             ],
-            'amount'      => ['required', 'integer', 'min:1'],
+            'amount'      => ['required', 'integer', 'min:0'],
             'discount'    => ['nullable', 'numeric', 'min:0'],
         ];
     }
@@ -54,7 +54,7 @@ class StorePaymentRequest extends FormRequest
 
             'amount.required'      => 'المبلغ مطلوب.',
             'amount.integer'       => 'المبلغ غير صحيح.',
-            'amount.min'           => 'المبلغ يجب أن يكون 1 على الأقل.',
+            'amount.min'           => 'المبلغ غير صحيح.',
 
             'discount.numeric'     => 'الخصم غير صحيح.',
             'discount.min'         => 'الخصم غير صحيح.',

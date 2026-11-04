@@ -191,7 +191,7 @@ class EmployeeController extends Controller
             // update overlimit and remaining withdrawals
             $employee->updateEmployeeWithdrawal(
                 max(0, - ($data['final_salary'] + $employee->remaining_withdrawal)),
-                max(0, $data['final_salary'] + $employee->over_withdrawal_limit)
+                max(0, $data['final_salary'] - $employee->over_withdrawal_limit)
             );
             $employee->resetHolidays(); // reset holidays after wage save calculation
             $employee->resetWithdrawals(); // reset withdrawals after wage save calculation

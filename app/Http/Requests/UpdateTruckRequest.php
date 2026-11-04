@@ -88,6 +88,7 @@ class UpdateTruckRequest extends FormRequest
                  */
                 $unit = $fruit['unified_unit_price'] ?? null;
                 $box  = $fruit['unified_box_price'] ?? null;
+                $weight  = $fruit['unified_weight'] ?? null;
 
                 if (empty($unit) && empty($box)) {
                     $validator->errors()->add(
@@ -108,6 +109,13 @@ class UpdateTruckRequest extends FormRequest
                     $validator->errors()->add(
                         "fruits.$index.unified_box_price",
                         'لا يمكن إدخال سعر الكيلو وسعر البرنيكة معًا.'
+                    );
+                }
+
+                if (!empty($box) && empty($weight)) {
+                    $validator->errors()->add(
+                        "fruits.$index.unified_weight",
+                        'يرجى إدخال الوزن الموحد للبرنيكه.'
                     );
                 }
             }

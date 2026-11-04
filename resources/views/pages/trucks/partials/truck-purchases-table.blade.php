@@ -99,77 +99,192 @@
                         @endforeach
                     @endforeach
 
-                    @php
-                        $grouped = collect($truck->totals_by_box_class['by_box_class'])
-                            // 1️⃣ sort by boxClass key itself (ENUM order / string order)
-                            ->sortKeys()
-                            // 2️⃣ sort internally by price
-                            ->map(function ($priceGroups) {
-                                return collect($priceGroups)->sortByDesc(function ($totals) {
-                                    return $totals['unit_price'] ?? $totals['box_price'];
+                    @if ($truck->truckFruits->count() > 1)
+
+                        @php
+                            $grandBoxes = 0;
+                            $grandWeight = 0;
+                            $grandAmount = 0;
+                        @endphp
+
+                        @foreach ($truck->truckFruits as $tf)
+                            @php
+                                $fruitBoxes = 0;
+                                $fruitWeight = 0;
+                                $fruitAmount = 0;
+
+                                $grouped = $tf->customerPurchases->groupBy('box_class')->map(function ($classGroup) {
+                                    return $classGroup
+                                        ->groupBy(function ($cp) {
+                                            if ($cp->computed_unit_price !== null) {
+                                                return 'unit_' . $cp->computed_unit_price;
+                                            }
+
+                                            return 'box_' . $cp->computed_box_price;
+                                        })
+                                        ->sortByDesc(function ($priceGroup) {
+                                            $first = $priceGroup->first();
+
+                                            return $first->computed_unit_price ?? $first->computed_box_price;
+                                        });
                                 });
-                            });
-                        $grandTotal = $truck->totals_by_box_class['total_amount'];
-                        // count how many rows we will render
-                        $rowCount = $grouped->flatten(1)->count();
-                    @endphp
+                            @endphp
 
-                    @foreach ($grouped as $boxClass => $priceGroups)
-                        @foreach ($priceGroups as $price => $totals)
-                            <tr class="table-light fw-bolder fs-5 text-center">
-
-                                {{-- إجمالى العدد label (first cell) --}}
-                                @if ($loop->parent->first && $loop->first)
-                                    <td rowspan="{{ $rowCount }}" colspan="3">إجمالى العدد</td>
-                                @endif
-
-                                {{-- total boxes --}}
-                                <td>
-                                    {{ transform_numeric_value($totals['total_boxes']) }}
+                            <tr class="table-primary fs-5 fw-bold">
+                                <td colspan="10">
+                                    {{ $tf->fruit->name }}
                                 </td>
-
-                                {{-- إجمالى الوزن --}}
-                                @if ($loop->parent->first && $loop->first)
-                                    <td rowspan="{{ $rowCount }}">إجمالى الوزن</td>
-                                @endif
-
-                                {{-- total weight --}}
-                                <td
-                                    class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
-                                    {{ transform_numeric_value($totals['total_weight'] ?? 0) }}
-                                </td>
-
-                                {{-- price --}}
-                                <td
-                                    class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
-                                    {{-- handle unit or box price --}}
-                                    {{ transform_numbers($totals['unit_price'] ?? $totals['box_price']) }}
-                                </td>
-
-
-                                @if ($loop->parent->first && $loop->first)
-                                    <td rowspan="{{ $rowCount }}" class="fw-bolder fs-3">
-                                        {{ transform_numeric_value($grandTotal) }}
-                                    </td>
-                                @endif
-
-                                {{-- box class label --}}
-                                <td
-                                    class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
-                                    {{ match ($boxClass) {
-                                        'first' => 'فاخر',
-                                        'second' => 'نمرة 2',
-                                        'third' => 'نمرة 3',
-                                        default => $boxClass,
-                                    } }}
-                                </td>
-
-                                @if ($loop->parent->first && $loop->first)
-                                    <td rowspan="{{ $rowCount }}"></td>
-                                @endif
                             </tr>
+
+                            @foreach ($grouped as $boxClass => $priceGroups)
+                                @foreach ($priceGroups as $priceGroup)
+                                    @php
+                                        $boxes = $priceGroup->sum('number_of_boxes');
+                                        $weight = $priceGroup->sum(fn($p) => $p->total_weight ?? 0);
+                                        $amount = $priceGroup->sum('computed_total');
+
+                                        $fruitBoxes += $boxes;
+                                        $fruitWeight += $weight;
+                                        $fruitAmount += $amount;
+                                    @endphp
+
+                                    <tr class="table-light fw-bolder text-center ">
+
+                                        <td colspan="3"></td>
+
+                                        <td
+                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                            {{ transform_numeric_value($boxes) }}
+                                        </td>
+
+                                        <td
+                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                            {{ transform_numeric_value($weight) }}
+                                        </td>
+
+                                        <td
+                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                            {{ transform_numbers($priceGroup->first()->computed_unit_price ?? $priceGroup->first()->computed_box_price) }}
+                                        </td>
+
+                                        <td
+                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                            {{ transform_numeric_value($amount) }}
+                                        </td>
+
+
+                                        <td
+                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                            {{ match ($boxClass) {
+                                                'first' => 'فاخر',
+                                                'second' => 'نمرة 2',
+                                                'third' => 'نمرة 3',
+                                                default => $boxClass,
+                                            } }}
+                                        </td>
+
+                                        <td colspan="2"></td>
+
+                                    </tr>
+                                @endforeach
+                            @endforeach
+
+                            <tr class="table-warning fw-bold">
+                                <td colspan="3">إجمالى الصنف</td>
+
+                                <td>{{ transform_numeric_value($fruitBoxes) }}</td>
+
+                                <td>{{ transform_numeric_value($fruitWeight) }}</td>
+
+                                <td></td>
+
+                                <td>{{ transform_numeric_value($fruitAmount) }}</td>
+
+                                <td colspan="3"></td>
+                            </tr>
+
+                            @php
+                                $grandBoxes += $fruitBoxes;
+                                $grandWeight += $fruitWeight;
+                                $grandAmount += $fruitAmount;
+                            @endphp
                         @endforeach
-                    @endforeach
+
+                        <tr class="table-dark fw-bold fs-5">
+                            <td colspan="3">الإجمالى العام</td>
+
+                            <td>{{ transform_numeric_value($grandBoxes) }}</td>
+
+                            <td>{{ transform_numeric_value($grandWeight) }}</td>
+
+                            <td></td>
+
+                            <td>{{ transform_numeric_value($grandAmount) }}</td>
+
+                            <td colspan="3"></td>
+                        </tr>
+                    @else
+                        @php
+                            $grouped = collect($truck->totals_by_box_class['by_box_class'])
+                                ->sortKeys()
+                                ->map(function ($priceGroups) {
+                                    return collect($priceGroups)->sortByDesc(function ($totals) {
+                                        return $totals['unit_price'] ?? $totals['box_price'];
+                                    });
+                                });
+
+                            $grandTotal = $truck->totals_by_box_class['total_amount'];
+                            $rowCount = $grouped->flatten(1)->count();
+                        @endphp
+
+                        @foreach ($grouped as $boxClass => $priceGroups)
+                            @foreach ($priceGroups as $price => $totals)
+                                <tr class="table-light fw-bolder fs-5 text-center">
+
+                                    @if ($loop->parent->first && $loop->first)
+                                        <td rowspan="{{ $rowCount }}" colspan="3">إجمالى العدد</td>
+                                    @endif
+
+                                    <td>
+                                        {{ transform_numeric_value($totals['total_boxes']) }}
+                                    </td>
+
+                                    <td
+                                        class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        {{ transform_numeric_value($totals['total_weight'] ?? 0) }}
+                                    </td>
+
+                                    <td
+                                        class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        {{ transform_numbers($totals['unit_price'] ?? $totals['box_price']) }}
+                                    </td>
+
+                                    @if ($loop->parent->first && $loop->first)
+                                        <td rowspan="{{ $rowCount }}" class="fw-bolder fs-3">
+                                            {{ transform_numeric_value($grandTotal) }}
+                                        </td>
+                                    @endif
+
+                                    <td
+                                        class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        {{ match ($boxClass) {
+                                            'first' => 'فاخر',
+                                            'second' => 'نمرة 2',
+                                            'third' => 'نمرة 3',
+                                            default => $boxClass,
+                                        } }}
+                                    </td>
+
+                                    @if ($loop->parent->first && $loop->first)
+                                        <td rowspan="{{ $rowCount }}"></td>
+                                    @endif
+
+                                    <td></td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+
+                    @endif
 
                 </tbody>
             </table>

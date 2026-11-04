@@ -32,9 +32,9 @@
                 <label class="form-label">نوع البرنيكة</label>
                 <select name="fruits[__INDEX__][box_type]" class="form-select">
                     <option disabled selected>إختر نوع/حجم البرنيكة...</option>
-                    <option value="normal_box">برنيكة صغيرة</option>
+                    <option value="normal_box">برنيكة وسط</option>
                     <option value="big_box">برنيكة كبيرة</option>
-                    <option value="small_box">برنيكة 10 كيلو</option>
+                    <option value="small_box">برنيكة صغيرة</option>
                     <option value="small_net">برنيكة شبك</option>
                 </select>
             </div>

@@ -34,6 +34,9 @@ class TruckController extends Controller
             ->orderBy('created_at', 'DESC')
             ->get();
 
+        $drivers = Driver::orderBy('name')->get(['id', 'name']);
+        $fruits = Fruit::orderBy('name')->get(['id', 'name']);
+
         // 2️⃣ Split using accessor logic (PHP-side)
         $finished = $trucks->filter(
             fn($truck) =>
@@ -51,7 +54,9 @@ class TruckController extends Controller
 
         return view('pages.trucks.index', compact(
             'finishedTrucks',
-            'unfinishedTrucks'
+            'unfinishedTrucks',
+            'drivers',
+            'fruits'
         ));
     }
 
@@ -100,8 +105,8 @@ class TruckController extends Controller
     {
         $boxTypes = [
             'big_box' => 'برنيكة كبيرة',
-            'normal_box' => 'برنيكة صغيرة',
-            'small_box' => 'برنيكة 10 كيلو',
+            'normal_box' => 'برنيكة وسط',
+            'small_box' => 'برنيكة صغيرة',
             'small_net' => 'برنيكة شبك',
         ];
 

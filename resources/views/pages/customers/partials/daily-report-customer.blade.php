@@ -1,6 +1,6 @@
 <h3 class="mt-4 text-primary fw-bold text-center">
     <a href="{{ route('customers.show', $data['customer']->id) }}"> {{ $data['customer']->name }}</a>
-    — <span class="text-muted">{{ $data['customer']->location }}</span>
+    — <span class="text-muted" style="font-size: smaller">{{ $data['customer']->location }} {{ transform_numbers(\Carbon\Carbon::parse($date)->locale('ar')->translatedFormat('( l d - m )')) }}</span>
 </h3>
 
 <div class="table-responsive mb-4">
@@ -25,7 +25,9 @@
                     <td>{{ $row->box_type_name }}</td>
 
                     <td class="fw-bolder fs-5">
+                        @if($row->computed_box_price == 0)
                         {{ $row->total_weight ? transform_numeric_value($row->total_weight) : '-' }}
+                        @endif
                     </td>
 
                     <td class="fw-bolder fs-5">

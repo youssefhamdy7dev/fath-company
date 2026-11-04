@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\CustomerPurchase;
 use App\Models\TruckFruit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
@@ -10,88 +11,126 @@ use Illuminate\Validation\Rule;
 
 class StorePurchaseRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'customer_id'        => ['required', 'exists:customers,id'],
-            'date'               => ['required'],
+            'customer_id' => [
+                'nullable',
+                'exists:customers,id'
+            ],
+
+            'date' => [
+                'required',
+                'date',
+            ],
+
             'truck_fruit_id' => [
                 'required',
                 'exists:truck_fruit,id',
-                Rule::unique('customer_purchase')
-                    ->where(function ($query) {
-                        return $query
-                            ->where('customer_id', $this->customer_id)
-                            ->where('truck_fruit_id', $this->truck_fruit_id)
-                            ->where('box_class', $this->box_class)
-                            ->where('date', $this->date);
-                    }),
             ],
-            'box_class'          => ['required'],
-            'number_of_boxes'    => ['required', 'integer', 'min:1'],
-            'total_weight'       => ['nullable', 'numeric', 'min:1'],
-            'unique_unit_price'  => ['nullable', 'numeric', 'min:1'],
-            'unique_box_price'   => ['nullable', 'integer', 'min:1'],
+
+            'box_class' => [
+                'required',
+                Rule::in(['first', 'second', 'third']),
+            ],
+
+            'number_of_boxes' => [
+                'required',
+                'integer',
+                'min:1'
+            ],
+
+            'total_weight' => [
+                'nullable',
+                'numeric',
+                'min:1'
+            ],
+
+            'unique_unit_price' => [
+                'nullable',
+                'numeric',
+                'min:1'
+            ],
+
+            'unique_box_price' => [
+                'nullable',
+                'integer',
+                'min:1'
+            ],
         ];
     }
 
-    /**
-     * Customize validation messages.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function messages(): array
     {
         return [
-            'customer_id.required'       => 'الزبون مطلوب.',
-            'customer_id.exists'         => 'الزبون المحدد غير موجود.',
+            'customer_id.exists' => 'الزبون المحدد غير موجود.',
 
-            'date.required'              => 'يرجى إدخال التاريخ',
+            'date.required' => 'يرجى إدخال التاريخ.',
+            'date.date' => 'التاريخ غير صحيح.',
 
-            'truck_fruit_id.required'    => 'اختر الصنف.',
-            'truck_fruit_id.exists'      => 'الصنف المحدد غير موجود.',
-            'truck_fruit_id.unique'      => 'لا يمكن للزبون شراء نفس الصنف مرتين.',
+            'truck_fruit_id.required' => 'اختر الصنف.',
+            'truck_fruit_id.exists' => 'الصنف المحدد غير موجود.',
+            'truck_fruit_id.unique' => 'لا يمكن تسجيل نفس العميل بنفس المشتروات مرتين.',
 
-            'box_class.required'         => 'يرجى إختيار فئة المشتروات',
+            'box_class.required' => 'يرجى اختيار فئة المشتروات.',
+            'box_class.in' => 'فئة المشتروات غير صحيحة.',
 
-            'number_of_boxes.required'   => 'عدد البرانيك مطلوب.',
-            'number_of_boxes.integer'    => 'عدد البرانيك غير صحيح.',
-            'number_of_boxes.min'        => 'عدد البرانيك يجب أن يكون 1 على الأقل.',
+            'number_of_boxes.required' => 'عدد البرانيك مطلوب.',
+            'number_of_boxes.integer' => 'عدد البرانيك غير صحيح.',
+            'number_of_boxes.min' => 'عدد البرانيك يجب أن يكون 1 على الأقل.',
 
-            'total_weight.numeric'       => 'إجمالي الوزن غير صحيح.',
-            'total_weight.min'           => 'إجمالي الوزن غير صحيح.',
+            'total_weight.numeric' => 'إجمالي الوزن غير صحيح.',
+            'total_weight.min' => 'إجمالي الوزن غير صحيح.',
 
-            'unique_unit_price.numeric'  => 'الفئة غير صحيحة.',
-            'unique_unit_price.min'      => 'الفئة غير صحيحة.',
+            'unique_unit_price.numeric' => 'سعر الكيلو غير صحيح.',
+            'unique_unit_price.min' => 'سعر الكيلو غير صحيح.',
 
-            'unique_box_price.integer'   => 'الفئة غير صحيحة.',
-            'unique_box_price.min'       => 'الفئة غير صحيحة.',
+            'unique_box_price.integer' => 'سعر البرنيكة غير صحيح.',
+            'unique_box_price.min' => 'سعر البرنيكة غير صحيح.',
         ];
     }
 
-    /**
-     * Customized rules for unique prices
-     */
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
 
+            if ($this->filled('customer_id')) {
+
+                $query = CustomerPurchase::query()
+                    ->where('customer_id', $this->customer_id)
+                    ->where('truck_fruit_id', $this->truck_fruit_id)
+                    ->where('box_class', $this->box_class)
+                    ->whereDate('date', $this->date)
+                    ->where(function ($query) {
+
+                        // Same unit price
+                        if (!is_null($this->unique_unit_price)) {
+                            $query->where('unique_unit_price', $this->unique_unit_price);
+                        }
+
+                        // OR same box price
+                        if (!is_null($this->unique_box_price)) {
+                            $query->orWhere('unique_box_price', $this->unique_box_price);
+                        }
+                    });
+
+                if ($query->exists()) {
+                    $validator->errors()->add(
+                        'truck_fruit_id',
+                        'لا يمكن تسجيل نفس العميل بنفس المشتروات والسعر مرتين في نفس اليوم.'
+                    );
+                }
+            }
             $truckFruit = TruckFruit::find($this->truck_fruit_id);
 
-            if (!$truckFruit) return;
+            if (!$truckFruit) {
+                return;
+            }
 
             $unitDefined = $truckFruit->unified_unit_price;
             $boxDefined  = $truckFruit->unified_box_price;
@@ -101,50 +140,66 @@ class StorePurchaseRequest extends FormRequest
             $total = $this->total_weight;
 
             /**
-             * Cannot enter both
+             * Cannot enter both custom prices
              */
-            if (!empty($unit) && !empty($box)) {
-                $validator->errors()->add('unique_unit_price', 'لا يمكن إدخال سعر الكيلو وسعر البرنيكة معًا.');
-                $validator->errors()->add('unique_box_price', 'لا يمكن إدخال سعر الكيلو وسعر البرنيكة معًا.');
+            if (!is_null($unit) && !is_null($box)) {
+                $validator->errors()->add(
+                    'unique_unit_price',
+                    'لا يمكن إدخال سعر الكيلو وسعر البرنيكة معًا.'
+                );
+
+                $validator->errors()->add(
+                    'unique_box_price',
+                    'لا يمكن إدخال سعر الكيلو وسعر البرنيكة معًا.'
+                );
             }
 
             /**
-             * If Unit price chosen → weight required
+             * If custom unit price exists → weight required
              */
-            if (!empty($unit) && empty($total)) {
-                $validator->errors()->add('total_weight', 'عند إدخال سعر الكيلو، يجب تحديد إجمالي الوزن.');
+            if (!is_null($unit) && is_null($total)) {
+                $validator->errors()->add(
+                    'total_weight',
+                    'عند إدخال سعر الكيلو يجب تحديد الوزن.'
+                );
             }
 
             /**
-             * Enforce truck mode:
-             *    If truck uses unit price → customer MUST use unit
-             *    If truck uses box  price → customer MUST use box
+             * Truck uses unit-price mode
              */
-            if ($unitDefined) {
-                // ❌ Wrong: box entered while truck uses unit price
-                if (!empty($box)) {
-                    $validator->errors()->add('unique_box_price', 'لا يمكن إدخال سعر البرنيكة لأن الصنف يعمل بسعر الكيلو.');
+            if (!is_null($unitDefined)) {
+                if (!is_null($box)) {
+                    $validator->errors()->add(
+                        'unique_box_price',
+                        'لا يمكن إدخال سعر البرنيكة لأن الصنف يعمل بسعر الكيلو.'
+                    );
                 }
-                if (empty($total)) {
-                    $validator->errors()->add('total_weight', 'يجب تحديد إجمالي الوزن.');
+
+                /**
+                 * Weight required ONLY if no unified weight exists
+                 */
+                if (is_null($total) && is_null($truckFruit->unified_weight)) {
+                    $validator->errors()->add(
+                        'total_weight',
+                        'يجب تحديد الوزن.'
+                    );
                 }
             }
 
-            if ($boxDefined) {
-                // ❌ Wrong: unit entered while truck uses box price
-                if (!empty($unit)) {
-                    $validator->errors()->add('unique_unit_price', 'لا يمكن إدخال سعر الكيلو لأن الصنف يعمل بسعر البرنيكة.');
-                }
-                if (!empty($total)) {
-                    $validator->errors()->add('total_weight', 'لا يمكن إدخال إجمالى الوزن لان السعر موحد بالبرنيكة');
+            /**
+             * Truck uses box-price mode
+             */
+            if (!is_null($boxDefined)) {
+                if (!is_null($unit)) {
+                    $validator->errors()->add(
+                        'unique_unit_price',
+                        'لا يمكن إدخال سعر الكيلو لأن الصنف يعمل بسعر البرنيكة.'
+                    );
                 }
             }
         });
     }
 
-    /**
-     * Customize failed validation to return JSON for AJAX
-     */
     protected function failedValidation(Validator $validator)
     {
         $response = response()->json([

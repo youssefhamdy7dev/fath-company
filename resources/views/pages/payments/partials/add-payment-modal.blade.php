@@ -16,7 +16,7 @@
 
         <dv class="mb-3">
             <label for="amount" class="form-label">المبلغ</label>
-            <input name="amount" type="number" min="1" class="form-control">
+            <input name="amount" type="number" class="form-control">
             <div class="invalid-feedback"></div>
         </dv>
 
@@ -83,7 +83,7 @@
                         submitBtn.innerHTML = originalBtnText;
                     } else {
                         // Handle success
-                        window.location.href = res.redirect_url;
+                        window.location.href = res.redirect_url || window.location.href;
                     }
                 })
                 .catch(err => {

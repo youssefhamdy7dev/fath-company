@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+<title>شركة الفتح | الموظفون</title>
+
 @section('content')
     <div class="card shadow-sm p-4 align-items-center align-content-center text-center mt-3">
         {{-- Session alerts --}}
@@ -14,7 +16,7 @@
 
         <h1 class="mb-5">قائمة الموظفين</h1>
 
-        <table class="table table-primary table-bordered table-hover align-middle">
+        <table class="table table-primary table-bordered table-hover align-middle text-center">
             <thead>
                 <tr class="table-dark">
                     <th>#</th>

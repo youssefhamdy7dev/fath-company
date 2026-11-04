@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+<title>{{ $employee->name }}</title>
+
 @section('content')
     @php
         $createdAt = str_replace(

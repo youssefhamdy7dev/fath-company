@@ -43,16 +43,23 @@
     @endif
 
     {{-- LIST OF CUSTOMERS --}}
-    <div class="row">
-        @foreach ($reportData as $entry)
-            {{-- <div class="col-12 col-md-6 col-lg-4"> --}}
-            <div class="col-12 col-md-6">
-                @include('pages.customers.partials.daily-report-customer', [
-                    'data' => $entry,
-                    'date' => $date,
-                ])
-            </div>
-        @endforeach
+    <div id="printArea">
+        <div class="row">
+            @foreach ($reportData as $entry)
+                <div class="col-12 col-md-6 print-card">
+                    <div class="print-block">
+                        @include('pages.customers.partials.daily-report-customer', [
+                            'data' => $entry,
+                            'date' => $date,
+                        ])
+                    </div>
+                </div>
+
+                @if ($loop->iteration % 4 == 0)
+                    <div style="page-break-after: always;"></div>
+                @endif
+            @endforeach
+        </div>
     </div>
 
     <x-scroll-button />

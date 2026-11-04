@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+<title>شركة الفتح | التحصيل</title>
+
 @section('content')
     <div class="card shadow-sm p-4 text-center">
 
@@ -19,7 +21,7 @@
         <h3 class="fw-bold mt-3 mb-3">دفتر التحصيل</h3>
 
         <div class="table-responsive w-100">
-            <table class="table table-secondary table-bordered table-hover align-middle">
+            <table class="table table-secondary table-bordered table-hover text-center align-middle">
                 <thead class="table-dark">
                     <tr>
                         <th>#</th>

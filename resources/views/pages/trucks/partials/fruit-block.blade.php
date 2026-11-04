@@ -56,9 +56,9 @@
                 <option disabled {{ !($fruitData['box_type'] ?? '') ? 'selected' : '' }}>إختر نوع/حجم البرنيكة...
                 </option>
                 @foreach ([
-        'normal_box' => 'برنيكة صغيرة',
+        'normal_box' => 'برنيكة وسط',
         'big_box' => 'برنيكة كبيرة',
-        'small_box' => 'برنيكة 10 كيلو',
+        'small_box' => 'برنيكة صغيرة',
         'small_net' => 'برنيكة شبك',
     ] as $value => $label)
                     <option value="{{ $value }}"

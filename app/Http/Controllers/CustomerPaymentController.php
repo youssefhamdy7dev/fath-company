@@ -20,6 +20,8 @@ class CustomerPaymentController extends Controller
         'البساتين',
         'سوق البساتين',
         'السد العالى',
+        'ميدان أبو عبده',
+        'على عبدالعزيز',
         'أبو بريك',
         'المطبعة',
         'الجزيرة',
@@ -49,7 +51,8 @@ class CustomerPaymentController extends Controller
             return $item->date;
         });
 
-        $customers = Customer::whereNotIn('name', ['نقدية', 'المحل'])->orderBy('location')->orderBy('name')->get();
+        $customers = Customer::whereNotIn('name', ['نقدية', 'المحل'])
+            ->orderBy('location')->orderBy('name')->get();
 
         return view('pages.payments.index', compact('dates', 'customers'));
     }
@@ -148,7 +151,7 @@ class CustomerPaymentController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تمت إضافة التحصيل بنجاح.',
-            'redirect_url' => route('customer-payments.index'),
+            'redirect_url' => NULL,
         ]);
     }
 

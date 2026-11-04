@@ -118,4 +118,17 @@ class Truck extends Model
         return $this->truckFruits
             ->sum('second_class_boxes') + $this->truckFruits->sum('third_class_boxes');
     }
+
+    public function getAutoSelectableTruckFruitIdAttribute(): ?int
+    {
+        $this->loadMissing('truckFruits.customerPurchases');
+
+        $notCompleted = $this->truckFruits
+            ->filter(fn($tf) => ! $tf->is_fully_purchased);
+
+        // Auto-select ONLY if exactly one is still open
+        return $notCompleted->count() === 1
+            ? $notCompleted->first()->id
+            : null;
+    }
 }

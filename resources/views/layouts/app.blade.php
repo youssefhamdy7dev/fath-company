@@ -19,6 +19,69 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Reem+Kufi+Fun:wght@400..700&display=swap"
         rel="stylesheet">
+
+    <style>
+        @media print {
+
+            :root {
+                /* --print-scale: 0.75; */
+            }
+
+            body * {
+                visibility: hidden !important;
+            }
+
+            #printArea,
+            #printArea * {
+                visibility: visible !important;
+            }
+
+            #printArea {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: calc(100% / var(--print-scale));
+                transform: scale(var(--print-scale));
+                transform-origin: top left;
+            }
+
+            /* 🔥 FORCE 2 columns layout */
+            .row {
+                display: flex !important;
+                flex-wrap: wrap !important;
+            }
+
+            .print-card {
+                width: 50% !important;
+                /* 2 columns */
+                padding: 5px;
+            }
+
+            /* 🔥 Keep each block intact */
+            .print-block {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            /* Prevent row breaking */
+            tr {
+                page-break-inside: avoid;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            td,
+            th {
+                padding: 3px !important;
+            }
+
+            h3 {
+                margin: 4px 0;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -33,6 +96,26 @@
     </main>
     @stack('modals')
     @stack('scripts')
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // disable mouse wheel on number inputs
+            document.querySelectorAll('input[type=number]').forEach(input => {
+                input.addEventListener('wheel', function(e) {
+                    e.preventDefault();
+                });
+
+                // optional: disable arrow keys
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+        });
+    </script>
 </body>
 
 </html>

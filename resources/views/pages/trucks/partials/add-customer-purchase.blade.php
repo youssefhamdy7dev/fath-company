@@ -32,10 +32,15 @@
                             <option disabled selected>إختيار الصنف...</option>
                         @endif
                         @foreach ($truck->truckFruits as $truckFruit)
-                            <option value="{{ $truckFruit->id }}">
+                            <option value="{{ $truckFruit->id }}"
+                                {{ $truckFruit->id === $truck->auto_selectable_truck_fruit_id ? 'selected' : '' }}
+                                {{-- $truckFruit->is_fully_purchased ? 'disabled' : '' --}}>
                                 {{ $truckFruit->fruit->name }}
                                 -
                                 {{ $boxTypes[$truckFruit->box_type] ?? $truckFruit->box_type }}
+                                @if ($truckFruit->is_fully_purchased)
+                                    (خالص)
+                                @endif
                             </option>
                         @endforeach
                     </select>
@@ -44,20 +49,18 @@
             </div>
 
             {{-- Row 2 --}}
-
             <div class="col-md-4">
                 {{-- فئة --}}
                 <div class="form-div">
                     <label for="box_class" class="form-label">فئة المشتروات</label>
                     <select name="box_class" id="box_class" class="form-select">
-                        @if ($truck->truckFruits->some(fn($truckFruit) => $truckFruit->second_class_boxes == null && $truckFruit->third_class_boxes == null) || $truck->numberOfLowClassBoughtBoxes >= $truck->numberOfLowClassBoxes)
-                            <option value="first" selected>فاخر</option>
-                        @else
-                            <option disabled selected>إختيار الفئة...</option>
-                            <option value="first">فاخر</option>
-                            <option value="second">نمرة 2</option>
-                            <option value="third">نمرة 3 / هالك</option>
-                        @endif
+                        @php
+                            $hasLowClasses = $truck->numberOfLowClassBoughtBoxes >= $truck->numberOfLowClassBoxes;
+                        @endphp
+                        <option {{ $hasLowClasses ? 'disabled' : 'disabled selected' }}>إختيار الفئة...</option>
+                        <option value="first" {{ $hasLowClasses ? 'selected' : '' }}>فاخر</option>
+                        <option value="second">نمرة 2</option>
+                        <option value="third">نمرة 3 / هالك</option>
                     </select>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -152,12 +155,14 @@
                         // Handle validation errors
                         for (const [field, messages] of Object.entries(res.errors)) {
                             const input = form.querySelector(`[name="${field}"]`);
-                            if (input) {
-                                input.classList.add('is-invalid');
-                                const feedback = input.parentElement.querySelector('.invalid-feedback');
-                                if (feedback) {
-                                    feedback.textContent = messages[0];
-                                }
+                            if (!input) continue;
+                            input.classList.add('is-invalid');
+                            const feedback = input
+                                .closest('.form-div')
+                                ?.querySelector('.invalid-feedback');
+                            if (feedback) {
+                                feedback.textContent = messages[0];
+                                feedback.style.display = 'block'; // 🔥 THIS IS THE KEY
                             }
                         }
                         submitBtn.classList.remove('disabled');

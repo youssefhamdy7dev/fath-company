@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Model;
 
-class CustomerPurchase extends Pivot
+class CustomerPurchase extends Model
 {
+    protected $table = 'customer_purchase';
+
     protected $guarded = [];
 
     protected $casts = [
         'date' => 'date',
+        'total_weight' => 'float',
     ];
 
     /**
@@ -36,19 +39,37 @@ class CustomerPurchase extends Pivot
 
     public function getCustomerNameAttribute()
     {
-        return $this->customer->name;
+        return $this->customer->name ?? 'نقدية';
     }
 
     public function getBoxTypeNameAttribute()
     {
         $box_types = [
             'big_box' => 'برنيكة كبيرة',
-            'normal_box' => 'برنيكة صغيرة',
-            'small_box' => 'برنيكة 10 كيلو',
+            'normal_box' => 'برنيكة وسط',
+            'small_box' => 'برنيكة صغيرة',
             'small_net' => 'برنيكة شبك',
         ];
         return $box_types[$this->truckFruit->box_type]
             ?? $this->truckFruit->box_type;
+    }
+
+    /**
+     * Dynamic weight accessor:
+     * - use manually entered weight if exists
+     * - otherwise calculate from unified weight × boxes
+     */
+    public function getTotalWeightAttribute($value)
+    {
+        if (!is_null($value)) {
+            return (float) $value;
+        }
+
+        if (!is_null($this->truckFruit?->unified_weight)) {
+            return $this->truckFruit->unified_weight * $this->number_of_boxes;
+        }
+
+        return null;
     }
 
     public function getComputedUnitPriceAttribute()

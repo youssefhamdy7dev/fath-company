@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+<title>عربة: {{ $truck->fruit_names }}</title>
+
 @section('content')
     {{-- 🔹 Top Section: Truck Main Info --}}
     @include('pages.trucks.partials.truck-main-info')

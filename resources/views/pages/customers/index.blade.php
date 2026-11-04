@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+<title>شركة الفتح | الزبائن</title>
+
 @section('content')
     <div class="card shadow-sm p-4 align-items-center align-content-center text-center mt-3">
         <x-alerts.session-status />
@@ -29,7 +31,7 @@
         <h1 class="mt-2 mb-4">قائمة الزبائن</h1>
 
         <div id="customersTableWrapper" class="table-responsive w-100">
-            <table class="table table-light table-bordered table-hover align-middle">
+            <table class="table table-light table-bordered table-hover align-middle text-center">
                 <thead>
                     <tr class="table-dark">
                         <th>#</th>

@@ -2,8 +2,8 @@
     $truck = $row->truckFruit->truck;
     $boxTypes = [
         'big_box' => 'برنيكة كبيرة',
-        'normal_box' => 'برنيكة صغيرة',
-        'small_box' => 'برنيكة 10 كيلو',
+        'normal_box' => 'برنيكة وسط',
+        'small_box' => 'برنيكة صغيرة',
         'small_net' => 'برنيكة شبك',
     ];
 @endphp

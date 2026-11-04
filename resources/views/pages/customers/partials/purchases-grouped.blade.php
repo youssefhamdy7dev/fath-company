@@ -1,4 +1,4 @@
-@if (count($groupedPurchases) < 1)
+@if ($dates->count() < 1)
     <div class="card p-4 shadow-sm mb-4">
         <div class="fs-4 fw-bolder text-muted text-center">لا توجد مشتروات.</div>
     </div>

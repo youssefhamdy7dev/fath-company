@@ -1,5 +1,5 @@
 <div class="d-flex gap-3">
-    <x-form.input-group name="date" label="التاريخ" type="text" value="{{ old('date') }}" class="datepicker"
+    <x-form.input-group name="date" id="globdate" label="التاريخ" type="text" value="{{ old('date') }}" class="globdatepicker"
         autocomplete="off" />
 
     <x-form.input-group name="total_boxes" label="إجمالى عدد البرانيك" type="number" min="0"

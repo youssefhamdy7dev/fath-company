@@ -14,12 +14,19 @@
                 <div class="form-div">
                     <label class="form-label">الزبون</label>
                     <select name="customer_id" class="form-select">
+
+                        {{-- NULL option --}}
+                        <option value="" {{ is_null($purchase->customer_id) ? 'selected' : '' }}>
+                            نقدية
+                        </option>
+
                         @foreach ($customers as $customer)
                             <option value="{{ $customer->id }}"
-                                {{ $purchase->customer_id == $customer->id ? 'selected' : '' }}>
+                                {{ $purchase->customer_id === $customer->id ? 'selected' : '' }}>
                                 {{ $customer->name }}
                             </option>
                         @endforeach
+
                     </select>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -71,7 +78,7 @@
                 <div class="form-div">
                     <label class="form-label">إجمالي الوزن الصافي</label>
                     <input type="number" step="0.01" name="total_weight" class="form-control"
-                        value="{{ $purchase->total_weight }}">
+                        value="{{ $tf->unified_weight ? null : $purchase->total_weight }}">
                     <div class="invalid-feedback"></div>
                 </div>
             </div>

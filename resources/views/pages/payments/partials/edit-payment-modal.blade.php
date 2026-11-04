@@ -21,8 +21,7 @@
 
         <div class="mb-3">
             <label class="form-label">المبلغ</label>
-            <input type="number" name="amount" class="form-control" id="edit_amount" min="1"
-                value="{{ $payment->amount }}">
+            <input type="number" name="amount" class="form-control" id="edit_amount" value="{{ $payment->amount }}">
             <div class="invalid-feedback"></div>
         </div>
 

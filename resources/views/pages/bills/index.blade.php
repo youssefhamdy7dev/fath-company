@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+<title>شركة الفتح | الفواتير</title>
+
 @section('content')
     <div class="card shadow-sm p-4 mt-3">
         <x-alerts.session-status />
