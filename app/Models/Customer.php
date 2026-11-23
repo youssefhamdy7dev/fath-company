@@ -26,29 +26,27 @@ class Customer extends Model
 
     public function getCurrentBalanceAttribute(): int
     {
-        // N+1 queries avoidance
-        $this->load(['payments', 'purchases', 'purchases.truckFruit']);
+        $this->loadMissing([
+            'payments',
+            'purchases',
+            'purchases.truckFruit',
+        ]);
 
-        // total purchases
-        $totalPurchases = $this->purchases->sum(function ($purchase) {
-            return $purchase->computed_total;
-        });
+        $totalPurchases = $this->purchases->sum(
+            fn($purchase) => $purchase->computed_total
+        );
 
-        // total payments & discounts
-        $totalPayments  = $this->payments->sum('amount');
+        $totalPayments = $this->payments->sum('amount');
         $totalDiscounts = $this->payments->sum('discount');
 
-        // final balace
-        $balance = ($this->account + $totalPurchases) - ($totalPayments + $totalDiscounts);
-
-        // your final equation
-        return $balance;
+        return ($this->account + $totalPurchases)
+            - ($totalPayments + $totalDiscounts);
     }
 
     public function getBalanceBefore($date): int
     {
         // N+1 queries avoidance
-        $this->load(['payments', 'purchases', 'purchases.truckFruit']);
+        // $this->load(['payments', 'purchases', 'purchases.truckFruit']);
 
         $cutoff = Carbon::parse($date)->format('Y-m-d');
 

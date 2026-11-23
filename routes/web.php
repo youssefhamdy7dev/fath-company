@@ -16,6 +16,9 @@ Route::get('/', function () {
     return view('home');
 })->name('home');
 
+Route::get('/payments-dashboard', [CustomerPaymentController::class, 'paymentsDashboard'])
+    ->name('payments-dashboard');
+
 Route::group(['prefix' => 'auth'], function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('login', [AuthController::class, 'login'])->name('auth.login');

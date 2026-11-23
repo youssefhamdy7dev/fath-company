@@ -12,16 +12,17 @@ if (!function_exists('transform_numbers')) {
 if (!function_exists('transform_numeric_value')) {
     function transform_numeric_value($number)
     {
-        // Detect negative
+        $number = (float) $number;
+
         $isNegative = $number < 0;
-        // Clean non-digits
-        $number = preg_replace('/[^\d]/', '', $number);
-        // Add commas
-        $formatted = number_format((int)$number);
-        // Convert to Eastern Arabic digits
+
+        $number = (int) round(abs($number));
+
+        $formatted = number_format($number);
+
         $formatted = transform_numbers($formatted);
-        // Convert to Eastern Arabic digits
-        return $isNegative ? $formatted . '-' : $formatted;
+
+        return $isNegative ? '-' . $formatted : $formatted;
     }
 }
 

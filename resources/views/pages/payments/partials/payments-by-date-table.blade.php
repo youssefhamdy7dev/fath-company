@@ -14,25 +14,43 @@
                     <th>إجراءات</th>
                 </tr>
             </thead>
+
             <tbody>
                 @php $i = 1; @endphp
+
                 @foreach ($grouped as $location => $payments)
                     <tr class="table-info">
-                        <td colspan="7" class="fw-bold">{{ $location }}</td>
+                        <td colspan="7" class="fw-bold">
+                            {{ $location }}
+                        </td>
                     </tr>
+
                     @foreach ($payments as $payment)
                         @php
-                            $remaining =
-                                $payment->customer->getBalanceBefore($displayDate) -
-                                (($payment->amount ?? 0) + ($payment->discount ?? 0));
+                            $balanceBefore = $balancesByCustomer[$payment->customer_id] ?? 0;
+
+                            $remaining = $balanceBefore - (($payment->amount ?? 0) + ($payment->discount ?? 0));
                         @endphp
+
                         <tr>
-                            <td>{{ transform_numeric_value($i++) }}</td>
+                            <td>
+                                {{ transform_numeric_value($i++) }}
+                            </td>
+
                             <td class="text-danger fw-bolder fs-5">
-                                {{ transform_numeric_value($payment->customer->getBalanceBefore($displayDate)) }}</td>
-                            <td><a href="{{ route('customers.show', $payment->customer->id) }}">
-                                    {{ $payment->customer->name }}</a></td>
-                            <td class="text-success fw-bolder fs-5">{{ transform_numeric_value($payment->amount) }}</td>
+                                {{ transform_numeric_value($balanceBefore) }}
+                            </td>
+
+                            <td>
+                                <a href="{{ route('customers.show', $payment->customer->id) }}">
+                                    {{ $payment->customer->name }}
+                                </a>
+                            </td>
+
+                            <td class="text-success fw-bolder fs-5">
+                                {{ transform_numeric_value($payment->amount) }}
+                            </td>
+
                             <td>
                                 @if ($payment->discount === null)
                                     <span class="text-muted">-</span>
@@ -40,22 +58,28 @@
                                     {{ transform_numeric_value($payment->discount) }}
                                 @endif
                             </td>
+
                             <td class="text-primary fw-bolder fs-5">
                                 {{ transform_numeric_value($remaining) }}
                             </td>
+
                             <td class="d-flex justify-content-center gap-2">
                                 <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
                                     data-bs-target="#editCustomerPaymentModal{{ $payment->id }}">
-                                    تعديل<i class="ps-1 bi bi-pencil-square"></i>
+                                    تعديل
+                                    <i class="ps-1 bi bi-pencil-square"></i>
                                 </button>
+
                                 <button class="btn btn-danger btn-sm delete-btn" data-id="{{ $payment->id }}"
                                     data-name="{{ $payment->customer->name }}"
                                     data-url="{{ route('customer-payments.destroy', $payment->id) }}"
                                     data-bs-toggle="modal" data-bs-target="#deletePaymentModal">
-                                    حذف <i class="bi bi-trash"></i>
+                                    حذف
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </td>
                         </tr>
+
                         @push('modals')
                             @include('pages.payments.partials.edit-payment-modal', [
                                 'payment' => $payment,

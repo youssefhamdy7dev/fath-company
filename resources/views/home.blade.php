@@ -8,6 +8,8 @@
 
         <div class="row g-4 gap-4 justify-content-center" dir="rtl">
             {{-- Dashboard Sections --}}
+            <x-dashboard-card title="العمومى" icon="bi-clipboard-data-fill" color="primary" :link="route('payments-dashboard')" />
+
             <x-dashboard-card title="الأصناف" icon="bi-box-seam-fill" color="info" :link="route('fruits.index')" />
 
             <x-dashboard-card title="العملاء" icon="bi-person-badge-fill" color="warning" :link="route('clients.index')" />

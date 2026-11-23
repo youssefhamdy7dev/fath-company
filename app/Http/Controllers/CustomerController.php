@@ -72,14 +72,195 @@ class CustomerController extends Controller
 
     //     return view('pages.customers.index', compact('customers', 'locations'));
     // }
+
     public function index()
     {
         $locations = $this->locations;
-        $customers = Customer::whereNotIn('name', ['نقدية', 'المحل'])
-            ->orderByRaw("FIELD(location, '" . implode("','", $locations) . "')")
+
+        $places = [
+            'صقر والبساتين' => [
+                'ميدان صقر',
+                'الكويتية',
+                'صقر',
+                'العمومى بساتين',
+                'البساتين',
+                'سوق البساتين',
+            ],
+            'السد العالى' => [
+                'السد العالى',
+                'ميدان أبو عبده',
+                'على عبدالعزيز',
+                'أبو بريك',
+            ],
+            'الجزيرة ودار السلام' => [
+                'المطبعة',
+                'الجزيرة',
+                'دار السلام',
+            ],
+            'فايدة كامل وحسنين الدسوقى' => [
+                'البير',
+                'المشير وأبو الوفا',
+                'عبدالحميد مكى',
+                'فايدة كامل',
+                'حسنين الدسوقى',
+                'المعادى',
+            ],
+            'أخرى' => [
+                'أخرى',
+            ],
+        ];
+
+        /*
+    |--------------------------------------------------------------------------
+    | 1. Fetch all customers
+    |--------------------------------------------------------------------------
+    */
+
+        $customers = Customer::query()
+            ->select([
+                'id',
+                'name',
+                'phone',
+                'location',
+                'account',
+            ])
+            ->whereNotIn('name', ['نقدية', 'المحل'])
+            ->orderByRaw(
+                "FIELD(location, '" . implode("','", $locations) . "')"
+            )
             ->orderBy('name')
             ->get();
-        return view('pages.customers.index', compact('customers', 'locations'));
+
+        $customerIds = $customers->pluck('id')->all();
+
+        $purchaseTotals = collect();
+        $paymentTotals = collect();
+
+        if (!empty($customerIds)) {
+
+            /*
+        |--------------------------------------------------------------------------
+        | 2. Aggregate all purchases in ONE query
+        |--------------------------------------------------------------------------
+        */
+
+            $effectiveWeight = '
+            COALESCE(
+                cp.total_weight,
+                tf.unified_weight * cp.number_of_boxes
+            )
+        ';
+
+            $effectiveUnitPrice = '
+            COALESCE(
+                cp.unique_unit_price,
+                tf.unified_unit_price
+            )
+        ';
+
+            $effectiveBoxPrice = '
+            COALESCE(
+                cp.unique_box_price,
+                tf.unified_box_price
+            )
+        ';
+
+            $purchaseTotalExpression = "
+            CASE
+                WHEN
+                    COALESCE($effectiveWeight, 0) <> 0
+                    AND COALESCE($effectiveUnitPrice, 0) <> 0
+                THEN
+                    COALESCE(
+                        CAST(
+                            TRUNCATE(
+                                ($effectiveUnitPrice * $effectiveWeight),
+                                0
+                            ) AS SIGNED
+                        ),
+                        0
+                    )
+                ELSE
+                    COALESCE(
+                        CAST(
+                            TRUNCATE(
+                                ($effectiveBoxPrice * cp.number_of_boxes),
+                                0
+                            ) AS SIGNED
+                        ),
+                        0
+                    )
+            END
+        ";
+
+            $purchaseTotals = DB::table('customer_purchase as cp')
+                ->leftJoin(
+                    'truck_fruit as tf',
+                    'tf.id',
+                    '=',
+                    'cp.truck_fruit_id'
+                )
+                ->whereIn('cp.customer_id', $customerIds)
+                ->select('cp.customer_id')
+                ->selectRaw(
+                    "COALESCE(SUM($purchaseTotalExpression), 0) as total"
+                )
+                ->groupBy('cp.customer_id')
+                ->get()
+                ->keyBy('customer_id');
+
+            /*
+        |--------------------------------------------------------------------------
+        | 3. Aggregate all payments in ONE query
+        |--------------------------------------------------------------------------
+        */
+
+            $paymentTotals = DB::table('customer_payments')
+                ->whereIn('customer_id', $customerIds)
+                ->select('customer_id')
+                ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
+                ->selectRaw('COALESCE(SUM(discount), 0) as total_discount')
+                ->groupBy('customer_id')
+                ->get()
+                ->keyBy('customer_id');
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | 4. Calculate balances in memory
+    |--------------------------------------------------------------------------
+    */
+
+        $balancesByCustomer = collect();
+
+        foreach ($customers as $customer) {
+            $purchases = (int) data_get(
+                $purchaseTotals->get($customer->id),
+                'total',
+                0
+            );
+
+            $payments = $paymentTotals->get($customer->id);
+
+            $totalPayments = (float) ($payments->total_amount ?? 0);
+            $totalDiscounts = (float) ($payments->total_discount ?? 0);
+
+            $balance = (int) (
+                $customer->account
+                + $purchases
+                - $totalPayments
+                - $totalDiscounts
+            );
+
+            $balancesByCustomer->put($customer->id, $balance);
+        }
+
+        return view('pages.customers.index', compact(
+            'customers',
+            'locations',
+            'places',
+            'balancesByCustomer',
+        ));
     }
 
     /**
