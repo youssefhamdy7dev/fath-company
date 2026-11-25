@@ -2,119 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Customer;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
+use App\Models\Customer;
+use App\Services\CustomerFinancialService;
+use App\Support\CustomerLocations;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
-    protected $locations = [
-        'ميدان صقر',
-        'الكويتية',
-        'صقر',
-        'العمومى بساتين',
-        'البساتين',
-        'سوق البساتين',
-        'السد العالى',
-        'ميدان أبو عبده',
-        'على عبدالعزيز',
-        'أبو بريك',
-        'المطبعة',
-        'الجزيرة',
-        'دار السلام',
-        'البير',
-        'المشير وأبو الوفا',
-        'عبدالحميد مكى',
-        'فايدة كامل',
-        'حسنين الدسوقى',
-        'المعادى',
-        'أخرى'
-    ];
-
     /**
      * Display a listing of the resource.
      */
-    // public function index(Request $request)
-    // {
-    //     $locations = $this->locations;
-
-    //     $query = Customer::query()
-    //         ->whereNotIn('name', ['نقدية', 'المحل'])
-    //         ->orderBy('location')->orderBy('name');
-
-    //     // Filter by name
-    //     if ($request->filled('name')) {
-    //         $query->where('name', 'like', '%' . $request->name . '%');
-    //     }
-
-    //     // Filter by location
-    //     if ($request->filled('location') && $request->location != '') {
-    //         $query->where('location', $request->location);
-    //     }
-
-    //     // Custom ordering
-    //     $query->orderByRaw("FIELD(location, '" . implode("','", $locations) . "')")
-    //         ->orderBy('name');
-
-    //     // Pagination
-    //     // if ($request->filled('name') || ($request->filled('location') && $request->location != '')) {
-    //     //     $customers = $query->paginate(50)->withQueryString();
-    //     // } else {
-    //     //     $customers = $query->paginate(20)->withQueryString();
-    //     // }
-    //     $customers = $query->get();
-    //     if ($request->ajax()) {
-    //         return view('pages.customers.partials.customers-table', compact('customers'))->render();
-    //     }
-
-    //     return view('pages.customers.index', compact('customers', 'locations'));
-    // }
-
     public function index()
     {
-        $locations = $this->locations;
-
-        $places = [
-            'صقر والبساتين' => [
-                'ميدان صقر',
-                'الكويتية',
-                'صقر',
-                'العمومى بساتين',
-                'البساتين',
-                'سوق البساتين',
-            ],
-            'السد العالى' => [
-                'السد العالى',
-                'ميدان أبو عبده',
-                'على عبدالعزيز',
-                'أبو بريك',
-            ],
-            'الجزيرة ودار السلام' => [
-                'المطبعة',
-                'الجزيرة',
-                'دار السلام',
-            ],
-            'فايدة كامل وحسنين الدسوقى' => [
-                'البير',
-                'المشير وأبو الوفا',
-                'عبدالحميد مكى',
-                'فايدة كامل',
-                'حسنين الدسوقى',
-                'المعادى',
-            ],
-            'أخرى' => [
-                'أخرى',
-            ],
-        ];
+        $locations = CustomerLocations::all();
+        $places = CustomerLocations::places();
 
         /*
-    |--------------------------------------------------------------------------
-    | 1. Fetch all customers
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 1. Fetch all customers
+        |--------------------------------------------------------------------------
+        */
 
         $customers = Customer::query()
             ->select([
@@ -131,125 +42,35 @@ class CustomerController extends Controller
             ->orderBy('name')
             ->get();
 
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Aggregate financial totals for all customers
+        |--------------------------------------------------------------------------
+        */
+
         $customerIds = $customers->pluck('id')->all();
 
-        $purchaseTotals = collect();
-        $paymentTotals = collect();
-
-        if (!empty($customerIds)) {
-
-            /*
-        |--------------------------------------------------------------------------
-        | 2. Aggregate all purchases in ONE query
-        |--------------------------------------------------------------------------
-        */
-
-            $effectiveWeight = '
-            COALESCE(
-                cp.total_weight,
-                tf.unified_weight * cp.number_of_boxes
-            )
-        ';
-
-            $effectiveUnitPrice = '
-            COALESCE(
-                cp.unique_unit_price,
-                tf.unified_unit_price
-            )
-        ';
-
-            $effectiveBoxPrice = '
-            COALESCE(
-                cp.unique_box_price,
-                tf.unified_box_price
-            )
-        ';
-
-            $purchaseTotalExpression = "
-            CASE
-                WHEN
-                    COALESCE($effectiveWeight, 0) <> 0
-                    AND COALESCE($effectiveUnitPrice, 0) <> 0
-                THEN
-                    COALESCE(
-                        CAST(
-                            TRUNCATE(
-                                ($effectiveUnitPrice * $effectiveWeight),
-                                0
-                            ) AS SIGNED
-                        ),
-                        0
-                    )
-                ELSE
-                    COALESCE(
-                        CAST(
-                            TRUNCATE(
-                                ($effectiveBoxPrice * cp.number_of_boxes),
-                                0
-                            ) AS SIGNED
-                        ),
-                        0
-                    )
-            END
-        ";
-
-            $purchaseTotals = DB::table('customer_purchase as cp')
-                ->leftJoin(
-                    'truck_fruit as tf',
-                    'tf.id',
-                    '=',
-                    'cp.truck_fruit_id'
-                )
-                ->whereIn('cp.customer_id', $customerIds)
-                ->select('cp.customer_id')
-                ->selectRaw(
-                    "COALESCE(SUM($purchaseTotalExpression), 0) as total"
-                )
-                ->groupBy('cp.customer_id')
-                ->get()
-                ->keyBy('customer_id');
-
-            /*
-        |--------------------------------------------------------------------------
-        | 3. Aggregate all payments in ONE query
-        |--------------------------------------------------------------------------
-        */
-
-            $paymentTotals = DB::table('customer_payments')
-                ->whereIn('customer_id', $customerIds)
-                ->select('customer_id')
-                ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
-                ->selectRaw('COALESCE(SUM(discount), 0) as total_discount')
-                ->groupBy('customer_id')
-                ->get()
-                ->keyBy('customer_id');
-        }
+        $financialTotals = app(CustomerFinancialService::class)
+            ->totalsByCustomer($customerIds);
 
         /*
-    |--------------------------------------------------------------------------
-    | 4. Calculate balances in memory
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 3. Calculate balances in memory
+        |--------------------------------------------------------------------------
+        */
+
+        $financialService = app(CustomerFinancialService::class);
 
         $balancesByCustomer = collect();
 
         foreach ($customers as $customer) {
-            $purchases = (int) data_get(
-                $purchaseTotals->get($customer->id),
-                'total',
-                0
-            );
+            $totals = $financialTotals->get($customer->id);
 
-            $payments = $paymentTotals->get($customer->id);
-
-            $totalPayments = (float) ($payments->total_amount ?? 0);
-            $totalDiscounts = (float) ($payments->total_discount ?? 0);
-
-            $balance = (int) (
-                $customer->account
-                + $purchases
-                - $totalPayments
-                - $totalDiscounts
+            $balance = $financialService->calculateBalance(
+                $customer->account,
+                $totals->purchase_total ?? 0,
+                $totals->payment_total ?? 0,
+                $totals->discount_total ?? 0
             );
 
             $balancesByCustomer->put($customer->id, $balance);
@@ -268,7 +89,8 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        $locations = $this->locations;
+        $locations = CustomerLocations::all();
+
         return view('pages.customers.create', compact('locations'));
     }
 
@@ -278,8 +100,10 @@ class CustomerController extends Controller
     public function store(StoreCustomerRequest $request)
     {
         Customer::create($request->validated());
-        return redirect()->route('customers.index')->with('success', 'تم إضافة الزبون بنجاح.');
-        // return redirect()->back()->with('success', 'تم إضافة الزبون بنجاح.');
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', 'تم إضافة الزبون بنجاح.');
     }
 
     /**
@@ -295,7 +119,8 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        $locations = $this->locations;
+        $locations = CustomerLocations::all();
+
         return view('pages.customers.edit', compact('customer', 'locations'));
     }
 
@@ -305,7 +130,10 @@ class CustomerController extends Controller
     public function update(UpdateCustomerRequest $request, Customer $customer)
     {
         $customer->update($request->validated());
-        return redirect()->route('customers.index')->with('success', 'تم تحديث بيانات الزبون بنجاح.');
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', 'تم تحديث بيانات الزبون بنجاح.');
     }
 
     /**
@@ -314,36 +142,21 @@ class CustomerController extends Controller
     public function destroy(Customer $customer)
     {
         $customer->delete();
-        return redirect()->route('customers.index')->with('success', "تم حذف الزبون: {$customer->name} بنجاح.");
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', "تم حذف الزبون: {$customer->name} بنجاح.");
     }
 
     /**
      * Display the purchases of a specific customer.
      */
-    // public function purchasesOld(Customer $customer)
-    // {
-    //     $purchaseQuery = $this->basePurchaseQuery($customer);
-    //     // Paginated unique dates
-    //     $dates = $this->paginatePurchaseDates($customer);
-    //     // Grouped purchases for the selected dates
-    //     $groupedPurchases = $this->fetchGroupedPurchases($purchaseQuery, $dates);
-    //     // Balances computed per date
-    //     $balances = $this->computeBalances($customer, $groupedPurchases);
-    //     return view('pages.customers.purchases', compact(
-    //         'customer',
-    //         'dates',
-    //         'groupedPurchases',
-    //         'balances'
-    //     ));
-    // }
-
-    // ################# START OF NEW CONTENT #################
     public function purchases(Customer $customer)
     {
         $dates = $this->paginateLedgerDates($customer);
 
         $groupedPurchases = $this->fetchGroupedPurchasesNew($customer, $dates);
-        $groupedPayments  = $this->fetchGroupedPayments($customer, $dates);
+        $groupedPayments = $this->fetchGroupedPayments($customer, $dates);
 
         $balances = $this->computeBalancesNew(
             $customer,
@@ -361,6 +174,9 @@ class CustomerController extends Controller
         ));
     }
 
+    /**
+     * Paginate unique dates from the customer's purchase and payment ledger.
+     */
     private function paginateLedgerDates(Customer $customer)
     {
         return DB::table(function ($query) use ($customer) {
@@ -377,6 +193,10 @@ class CustomerController extends Controller
             ->orderByDesc('ledger_date')
             ->paginate(5);
     }
+
+    /**
+     * Fetch purchases grouped by date for the selected paginated dates.
+     */
     private function fetchGroupedPurchasesNew(Customer $customer, $dates)
     {
         $selectedDates = $dates->pluck('ledger_date');
@@ -393,8 +213,12 @@ class CustomerController extends Controller
             ])
             ->orderByDesc('date')
             ->get()
-            ->groupBy(fn($p) => $p->date->format('Y-m-d'));
+            ->groupBy(fn($purchase) => $purchase->date->format('Y-m-d'));
     }
+
+    /**
+     * Fetch payments grouped by date for the selected paginated dates.
+     */
     private function fetchGroupedPayments(Customer $customer, $dates)
     {
         $selectedDates = $dates->pluck('ledger_date');
@@ -403,190 +227,219 @@ class CustomerController extends Controller
             ->whereIn(DB::raw('DATE(date)'), $selectedDates)
             ->orderByDesc('date')
             ->get()
-            ->groupBy(fn($p) => $p->date->format('Y-m-d'));
+            ->groupBy(fn($payment) => $payment->date->format('Y-m-d'));
     }
-    private function computeBalancesNew(Customer $customer, $ledgerDates, $groupedPurchases, $groupedPayments)
-    {
+
+    /**
+     * Compute balances for the selected ledger dates.
+     *
+     * The balance before the earliest selected date is calculated once.
+     * The selected dates are then processed chronologically in memory.
+     */
+    private function computeBalancesNew(
+        Customer $customer,
+        $ledgerDates,
+        $groupedPurchases,
+        $groupedPayments
+    ) {
         $balances = [];
 
-        foreach ($ledgerDates as $row) {
+        if (empty($ledgerDates)) {
+            return $balances;
+        }
+
+        $financialService = app(CustomerFinancialService::class);
+
+        $sortedDates = collect($ledgerDates)
+            ->sortBy('ledger_date')
+            ->values();
+
+        $earliestDate = Carbon::parse(
+            $sortedDates->first()->ledger_date
+        )->format('Y-m-d');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Calculate the balance before the earliest selected date once
+        |--------------------------------------------------------------------------
+        */
+
+        $previousTotals = $financialService->totalsByCustomer(
+            [$customer->id],
+            $earliestDate
+        )->get($customer->id);
+
+        $runningBalance = (float) $financialService->calculateBalance(
+            $customer->account,
+            $previousTotals->purchase_total ?? 0,
+            $previousTotals->payment_total ?? 0,
+            $previousTotals->discount_total ?? 0
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Calculate each selected date chronologically
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($sortedDates as $row) {
             $dateKey = Carbon::parse($row->ledger_date)->format('Y-m-d');
             $carbonDate = Carbon::parse($dateKey);
 
-            $purchases = $groupedPurchases[$dateKey] ?? collect();
-            $payments  = $groupedPayments[$dateKey] ?? collect();
+            $purchases = $groupedPurchases->get($dateKey, collect());
+            $payments = $groupedPayments->get($dateKey, collect());
 
-            $remaining = $customer->getBalanceBefore($carbonDate);
+            // Preserve the original integer balance before the current date.
+            $remaining = (int) $runningBalance;
 
             $totalPurchases = $purchases->sum('computed_total');
-            $paymentAmount  = $payments->sum('amount');
+            $paymentAmount = $payments->sum('amount');
             $discountAmount = $payments->sum('discount');
 
-            $final = ($remaining + $totalPurchases) - ($paymentAmount + $discountAmount);
+            $final = ($remaining + $totalPurchases)
+                - ($paymentAmount + $discountAmount);
 
             $balances[$dateKey] = [
-                'date'           => $carbonDate,
-                'remaining'      => (int) $remaining,
+                'date' => $carbonDate,
+                'remaining' => $remaining,
                 'totalPurchases' => (int) $totalPurchases,
-                'payment'        => (int) $paymentAmount,
-                'discount'       => (int) $discountAmount,
-                'final'          => (int) $final,
+                'payment' => (int) $paymentAmount,
+                'discount' => (int) $discountAmount,
+                'final' => (int) $final,
             ];
+
+            /*
+             * Keep the running balance untruncated between dates.
+             *
+             * getBalanceBefore() originally summed all previous transactions
+             * before returning an integer. Keeping the raw running value here
+             * preserves that behavior for the next selected date.
+             */
+            $runningBalance += $totalPurchases
+                - $paymentAmount
+                - $discountAmount;
         }
 
         return $balances;
     }
 
-    // ################## END OF NEW CONTENT ##################
-
     /**
-     * Display the payments of a specific customer.
-     */
-    // public function payments(Customer $customer)
-    // {
-    //     $customer->load('payments');
-
-    //     // Sort payments (newest first)
-    //     $payments = $customer->payments()->with('customer')->orderByDesc('date')->paginate(10);
-
-    //     return view('pages.customers.payments', compact('customer', 'payments'));
-    // }
-
-    /**
-     * Base query with common eager loads.
-     */
-    // private function basePurchaseQuery(Customer $customer)
-    // {
-    //     return $customer->purchases()->with([
-    //         'customer',
-    //         'truckFruit',
-    //         'truckFruit.fruit',
-    //         'truckFruit.truck',
-    //         'truckFruit.truck.truckFruits',
-    //         'truckFruit.truck.truckFruits.fruit',
-    //     ]);
-    // }
-
-    /**
-     * Paginate distinct purchase dates.
-     */
-    // private function paginatePurchaseDates(Customer $customer)
-    // {
-    //     return $customer->purchases()
-    //         ->selectRaw('DATE(date) AS purchase_date')
-    //         ->groupBy('purchase_date')
-    //         ->orderByDesc('purchase_date')
-    //         ->paginate(5);
-    // }
-
-    /**
-     * Fetch purchases grouped by date for the selected paginated dates.
-     */
-    // private function fetchGroupedPurchases($query, $dates)
-    // {
-    //     $selected = $dates->pluck('purchase_date');
-
-    //     return $query->clone()
-    //         ->whereIn(DB::raw('DATE(date)'), $selected)
-    //         ->orderByDesc('date')
-    //         ->get()
-    //         ->groupBy(fn($p) => $p->date->format('Y-m-d'));
-    // }
-
-    /**
-     * Compute running balances for grouped purchase dates.
-     */
-    // private function computeBalances(Customer $customer, $groupedPurchases)
-    // {
-    //     $balances  = [];
-    //     $payments  = $customer->payments;
-
-    //     foreach ($groupedPurchases->sortKeys() as $date => $rows) {
-    //         $carbonDate      = Carbon::parse($date);
-    //         $remaining       = $customer->getBalanceBefore($carbonDate) ?? 0;
-    //         $totalPurchases  = $rows->sum('computed_total');
-    //         $paymentAmount   = $payments->where('date', $carbonDate)->sum('amount');
-    //         $discountAmount  = $payments->where('date', $carbonDate)->sum('discount');
-
-    //         $final = ($remaining + $totalPurchases) - ($paymentAmount + $discountAmount);
-
-    //         $balances[$date] = [
-    //             'remaining'      => $remaining,
-    //             'totalPurchases' => $totalPurchases,
-    //             'payment'        => $paymentAmount,
-    //             'discount'       => $discountAmount,
-    //             'final'          => $final,
-    //             'date'           => $carbonDate,
-    //         ];
-    //     }
-    //     return $balances;
-    // }
-
-    /**
-     * Display customers purchases report given a certain date
+     * Display customers purchases report given a certain date.
      */
     public function reports(Request $request)
     {
-        // use provided date or today (Y-m-d)
+        // Use provided date or today (Y-m-d).
         $date = $request->date
             ? Carbon::parse($request->date)->format('Y-m-d')
             : now()->format('Y-m-d');
-        // Fetch customers who had purchases on that exact date, with required eager loads
+
+        // Fetch customers who had purchases on that exact date.
         $customers = $this->fetchCustomersWithPurchasesOnDate($date);
-        // Build per-customer report data for that date
+
+        // Build per-customer report data for that date.
         $reportData = $this->buildDailyReport($customers, $date);
-        // pass date & reportData to view
+
+        // Pass date and reportData to the view.
         return view('pages.customers.daily-reports', compact('date', 'reportData'));
     }
+
+    /**
+     * Fetch customers who had purchases on the specified date.
+     *
+     * Only the purchases and payments for that date are eager-loaded.
+     */
     private function fetchCustomersWithPurchasesOnDate(string $date)
     {
-        // whereHas ensures only customers that bought on $date are returned
-        return Customer::whereNotIn('name', ['نقدية', 'المحل'])->whereHas('purchases', function ($q) use ($date) {
-            $q->whereDate('date', $date);
-        })
+        return Customer::whereNotIn('name', ['نقدية', 'المحل'])
+            ->whereHas('purchases', function ($query) use ($date) {
+                $query->whereDate('date', $date);
+            })
             ->with([
-                // load purchases but we will filter on collection later — we still eager load truckFruit & fruit
-                'purchases' => function ($q) use ($date) {
-                    $q->whereDate('date', $date)
+                'purchases' => function ($query) use ($date) {
+                    $query->whereDate('date', $date)
                         ->with(['truckFruit', 'truckFruit.fruit']);
                 },
-                // load payments (we'll inspect payments for same date via collection)
-                'payments' => function ($q) use ($date) {
-                    $q->where('date', $date);
-                }
+                'payments' => function ($query) use ($date) {
+                    $query->whereDate('date', $date);
+                },
             ])
             ->orderBy('location')
             ->orderBy('name')
             ->get();
     }
 
+    /**
+     * Build the daily purchase report.
+     *
+     * Previous balances are aggregated for all customers in one batch
+     * instead of querying purchases and payments separately for each customer.
+     */
     private function buildDailyReport($customers, string $date): array
     {
         $data = [];
-        // parse once
+
+        if ($customers->isEmpty()) {
+            return $data;
+        }
+
         $carbonDate = Carbon::parse($date);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Fetch previous financial totals for all report customers
+        |--------------------------------------------------------------------------
+        */
+
+        $customerIds = $customers->pluck('id')->all();
+
+        $previousTotals = app(CustomerFinancialService::class)
+            ->totalsByCustomer($customerIds, $date);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Build each customer's report
+        |--------------------------------------------------------------------------
+        */
+
+        $financialService = app(CustomerFinancialService::class);
+
         foreach ($customers as $customer) {
-            // purchases have been eager-loaded (only those on $date because of fetchCustomersWithPurchasesOnDate)
-            $purchases = $customer->purchases->sortByDesc('id')->values();
-            // payments collection (all) — sum those with same date
-            $paymentAmount = $customer->payments->where('date', $carbonDate)->sum('amount');
-            $discountAmount = $customer->payments->where('date', $carbonDate)->sum('discount');
-            // total of purchases for this date (uses computed_total accessor)
-            $totalPurchases = $purchases->sum(function ($p) {
-                return $p->computed_total;
+            // Purchases have been eager-loaded for the selected date.
+            $purchases = $customer->purchases
+                ->sortByDesc('id')
+                ->values();
+
+            // Payments have been eager-loaded for the selected date.
+            $paymentAmount = $customer->payments->sum('amount');
+            $discountAmount = $customer->payments->sum('discount');
+
+            // Total of purchases for this date.
+            $totalPurchases = $purchases->sum(function ($purchase) {
+                return $purchase->computed_total;
             });
-            // remaining balance BEFORE this date (uses your model method)
-            $remaining = $customer->getBalanceBefore($carbonDate);
-            // final after today's sales & today's payments/discounts
-            $final = ($remaining + $totalPurchases) - ($paymentAmount + $discountAmount);
+
+            // Calculate the remaining balance before this date.
+            $totals = $previousTotals->get($customer->id);
+
+            $remaining = $financialService->calculateBalance(
+                $customer->account,
+                $totals->purchase_total ?? 0,
+                $totals->payment_total ?? 0,
+                $totals->discount_total ?? 0
+            );
+
+            // Final balance after today's purchases and payments.
+            $final = ($remaining + $totalPurchases)
+                - ($paymentAmount + $discountAmount);
+
             $data[] = [
-                'customer'       => $customer,
-                'purchases'      => $purchases,
-                'totalPurchases' => (int)$totalPurchases,
-                'remaining'      => (int)$remaining,
-                'payment'        => (int)$paymentAmount,
-                'discount'       => $discountAmount ? (float)$discountAmount : 0,
-                'final'          => (int)$final,
+                'customer' => $customer,
+                'purchases' => $purchases,
+                'totalPurchases' => (int) $totalPurchases,
+                'remaining' => (int) $remaining,
+                'payment' => (int) $paymentAmount,
+                'discount' => $discountAmount ? (float) $discountAmount : 0,
+                'final' => (int) $final,
             ];
         }
 

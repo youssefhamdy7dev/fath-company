@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Driver;
 use App\Http\Requests\StoreDriverRequest;
 use App\Http\Requests\UpdateDriverRequest;
+use App\Models\Driver;
 
 class DriverController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display all drivers.
      */
     public function index()
     {
         $drivers = Driver::orderBy('name')->get();
+
         return view('pages.drivers.index', compact('drivers'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a driver.
      */
     public function create()
     {
@@ -26,16 +27,19 @@ class DriverController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new driver.
      */
     public function store(StoreDriverRequest $request)
     {
         Driver::create($request->validated());
-        return redirect()->route('drivers.index')->with('status', 'تم إضافة السائق بنجاح.');
+
+        return redirect()
+            ->route('drivers.index')
+            ->with('status', 'تم إضافة السائق بنجاح.');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified driver.
      */
     public function show(Driver $driver)
     {
@@ -43,7 +47,7 @@ class DriverController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified driver.
      */
     public function edit(Driver $driver)
     {
@@ -51,20 +55,26 @@ class DriverController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified driver.
      */
     public function update(UpdateDriverRequest $request, Driver $driver)
     {
         $driver->update($request->validated());
-        return redirect()->route('drivers.index')->with('success', 'تم تحديث بيانات السائق بنجاح.');
+
+        return redirect()
+            ->route('drivers.index')
+            ->with('success', 'تم تحديث بيانات السائق بنجاح.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete the specified driver.
      */
     public function destroy(Driver $driver)
     {
         $driver->delete();
-        return redirect()->route('drivers.index')->with('success', 'تم حذف السائق بنجاح.');
+
+        return redirect()
+            ->route('drivers.index')
+            ->with('success', 'تم حذف السائق بنجاح.');
     }
 }

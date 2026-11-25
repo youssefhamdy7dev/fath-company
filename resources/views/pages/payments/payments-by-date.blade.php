@@ -37,48 +37,8 @@
             <div class="d-flex align-items-center gap-2">
                 <label class="form-label mb-0">المناطق:</label>
 
-                <div class="dropdown" id="placesDropdownWrapper">
-                    <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button"
-                        id="filterLocationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        كل المناطق
-                    </button>
-
-                    <div class="dropdown-menu p-3 shadow" id="placesDropdownMenu" aria-labelledby="filterLocationDropdown">
-
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <strong>اختر المناطق</strong>
-
-                            <button type="button" class="btn btn-sm btn-link text-danger p-0" id="clearPlaceSelection">
-                                إلغاء التحديد
-                            </button>
-                        </div>
-
-                        <hr class="my-2">
-
-                        @foreach ($places as $placeName => $placeLocations)
-                            <div class="form-check mb-2">
-                                <input class="form-check-input place-filter-checkbox" type="checkbox"
-                                    value="{{ $placeName }}" id="placeFilter{{ $loop->index }}" checked>
-
-                                <label class="form-check-label" for="placeFilter{{ $loop->index }}">
-                                    {{ $placeName }}
-                                </label>
-                            </div>
-                        @endforeach
-
-                        <hr class="my-2">
-
-                        <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllPlaces">
-                                تحديد الكل
-                            </button>
-
-                            <small class="text-muted align-self-center" id="placesSelectionCount">
-                                كل المناطق
-                            </small>
-                        </div>
-                    </div>
-                </div>
+                <x-places-dropdown :places="$places" :selected-place-keys="array_keys($places)" checkbox-class="place-filter-checkbox"
+                    button-class="btn btn-outline-secondary dropdown-toggle w-100" :empty-means-all="true" />
             </div>
         </div>
 
@@ -155,10 +115,6 @@
             const nameInput = document.getElementById('searchName');
             const placeCheckboxes = document.querySelectorAll('.place-filter-checkbox');
 
-            const dropdownButton = document.getElementById('filterLocationDropdown');
-            const clearButton = document.getElementById('clearPlaceSelection');
-            const selectAllButton = document.getElementById('selectAllPlaces');
-
             const selectionCount = document.getElementById('placesSelectionCount');
             const selectedPlacesAlert = document.getElementById('selectedPlacesAlert');
             const selectedPlacesText = document.getElementById('selectedPlacesText');
@@ -182,28 +138,16 @@
                 return selected.length > 0 ? selected : allPlaceKeys;
             }
 
-            // Update dropdown text and selection information.
+            // Update selected places information.
             function updatePlaceSelection() {
                 const checkedCount = Array.from(placeCheckboxes)
                     .filter(checkbox => checkbox.checked).length;
 
-                const effectiveCount = checkedCount === 0 ?
-                    allPlaceKeys.length :
-                    checkedCount;
-
                 if (checkedCount === 0 || checkedCount === allPlaceKeys.length) {
-                    dropdownButton.textContent = 'كل المناطق';
-                    selectionCount.textContent = 'كل المناطق';
                     selectedPlacesText.textContent =
                         'يتم عرض جميع المناطق';
                     selectedPlacesAlert.style.display = 'none';
                 } else {
-                    dropdownButton.textContent =
-                        `تم تحديد ${checkedCount} مناطق`;
-
-                    selectionCount.textContent =
-                        `${checkedCount} من ${allPlaceKeys.length}`;
-
                     const selectedNames = Array.from(placeCheckboxes)
                         .filter(checkbox => checkbox.checked)
                         .map(checkbox => checkbox.value);
@@ -212,11 +156,6 @@
                         selectedNames.join('، ');
 
                     selectedPlacesAlert.style.display = 'block';
-                }
-
-                if (checkedCount === 0) {
-                    selectionCount.textContent =
-                        `كل المناطق (${effectiveCount})`;
                 }
             }
 
@@ -306,28 +245,6 @@
                     updatePlaceSelection();
                     fetchFilteredTable();
                 });
-            });
-
-            clearButton.addEventListener('click', function(event) {
-                event.preventDefault();
-
-                placeCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-
-                updatePlaceSelection();
-                fetchFilteredTable();
-            });
-
-            selectAllButton.addEventListener('click', function(event) {
-                event.preventDefault();
-
-                placeCheckboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-
-                updatePlaceSelection();
-                fetchFilteredTable();
             });
 
             // Initial setup

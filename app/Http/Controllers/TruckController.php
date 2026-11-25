@@ -2,89 +2,156 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Truck;
 use App\Http\Requests\StoreTruckRequest;
 use App\Http\Requests\UpdateTruckRequest;
 use App\Models\Client;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Fruit;
+use App\Models\Truck;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 
 class TruckController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display trucks in separate finished and unfinished lists.
      */
     public function index()
     {
-        // 1️⃣ Get all trucks paginated normally
-        $trucks = Truck::with([
-            'bill',
-            'driver',
-            'truckFruits',
-            'truckFruits.client',
-            'truckFruits.fruit',
-            'truckFruits.customerPurchases',
-            'truckFruits.customerPurchases.customer',
-        ])
-            ->orderBy('date', 'DESC')
-            ->orderBy('created_at', 'DESC')
-            ->get();
+        $filters = [
+            'date' => request()->query('date'),
+            'driver_ids' => array_values(array_unique(array_filter(
+                array_map('intval', (array) request()->query('driver_ids', []))
+            ))),
+            'fruit_ids' => array_values(array_unique(array_filter(
+                array_map('intval', (array) request()->query('fruit_ids', []))
+            ))),
+        ];
+
+        $hasFilters = filled($filters['date'])
+            || !empty($filters['driver_ids'])
+            || !empty($filters['fruit_ids']);
+
+        $unfinishedQuery = $this->truckQueryByPurchaseStatus(false, $filters)
+            ->orderByDesc('date')
+            ->orderByDesc('created_at');
+
+        $finishedQuery = $this->truckQueryByPurchaseStatus(true, $filters)
+            ->orderByDesc('date')
+            ->orderByDesc('created_at');
+
+        if ($hasFilters) {
+            // Return every matching truck without pagination.
+            $unfinishedTrucks = $unfinishedQuery->get();
+            $finishedTrucks = $finishedQuery->get();
+        } else {
+            // Keep the existing fast, paginated default listing.
+            $unfinishedTrucks = $unfinishedQuery
+                ->paginate(10, ['*'], 'unfinished_page');
+
+            $finishedTrucks = $finishedQuery
+                ->paginate(5, ['*'], 'finished_page');
+        }
 
         $drivers = Driver::orderBy('name')->get(['id', 'name']);
         $fruits = Fruit::orderBy('name')->get(['id', 'name']);
-
-        // 2️⃣ Split using accessor logic (PHP-side)
-        $finished = $trucks->filter(
-            fn($truck) =>
-            $truck->numberOfBoughtBoxes >= $truck->total_boxes
-        );
-
-        $unfinished = $trucks->filter(
-            fn($truck) =>
-            $truck->numberOfBoughtBoxes < $truck->total_boxes
-        );
-
-        // 3️⃣ Manually paginate both collections
-        $unfinishedTrucks = $this->paginateCollection($unfinished, 10, 'unfinished_page');
-        $finishedTrucks   = $this->paginateCollection($finished, 5, 'finished_page');
 
         return view('pages.trucks.index', compact(
             'finishedTrucks',
             'unfinishedTrucks',
             'drivers',
-            'fruits'
+            'fruits',
+            'filters',
+            'hasFilters'
         ));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Build a truck query filtered by its purchase completion status
+     * and the selected truck filters.
+     */
+    private function truckQueryByPurchaseStatus(
+        bool $finished,
+        array $filters = []
+    ): Builder {
+        $boughtBoxesSubquery = DB::table('truck_fruit')
+            ->join(
+                'customer_purchase',
+                'customer_purchase.truck_fruit_id',
+                '=',
+                'truck_fruit.id'
+            )
+            ->whereColumn('truck_fruit.truck_id', 'trucks.id')
+            ->selectRaw('COALESCE(SUM(customer_purchase.number_of_boxes), 0)');
+
+        $operator = $finished ? '>=' : '<';
+
+        $query = Truck::query()
+            ->select('trucks.*')
+            ->selectSub(clone $boughtBoxesSubquery, 'bought_boxes')
+            ->whereRaw(
+                '(' . $boughtBoxesSubquery->toSql() . ") {$operator} trucks.total_boxes"
+            )
+            ->with([
+                'bill',
+                'driver',
+                'truckFruits.client',
+                'truckFruits.fruit',
+            ]);
+
+        if (filled($filters['date'] ?? null)) {
+            $query->whereDate('trucks.date', $filters['date']);
+        }
+
+        if (!empty($filters['driver_ids'])) {
+            $query->whereIn('trucks.driver_id', $filters['driver_ids']);
+        }
+
+        if (!empty($filters['fruit_ids'])) {
+            $query->whereHas('truckFruits', function (Builder $fruitQuery) use ($filters) {
+                $fruitQuery->whereIn('fruit_id', $filters['fruit_ids']);
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Show the form for creating a truck.
      */
     public function create()
     {
         $drivers = Driver::get();
         $fruits = Fruit::orderBy('name')->get();
         $clients = Client::orderBy('name')->get();
-        return view('pages.trucks.create', compact('drivers', 'fruits', 'clients'));
+
+        return view('pages.trucks.create', compact(
+            'drivers',
+            'fruits',
+            'clients'
+        ));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new truck and its associated fruits.
      */
     public function store(StoreTruckRequest $request)
     {
         DB::transaction(function () use ($request) {
-            // 1️⃣ Create the main truck
-            $truck = Truck::create($request->only('date', 'total_boxes', 'freight', 'driver_id'));
+            $truck = Truck::create(
+                $request->only(
+                    'date',
+                    'total_boxes',
+                    'freight',
+                    'driver_id'
+                )
+            );
 
-            // 2️⃣ Create each TruckFruit row manually
             foreach ($request->fruits as $fruit) {
                 $truck->truckFruits()->create([
                     'fruit_id' => $fruit['fruit_id'],
-                    'client_id' => $fruit['client_id'] ?? NULL,
+                    'client_id' => $fruit['client_id'] ?? null,
                     'box_type' => $fruit['box_type'],
                     'number_of_boxes' => $fruit['number_of_boxes'],
                     'second_class_boxes' => $fruit['second_class_boxes'] ?? null,
@@ -95,11 +162,14 @@ class TruckController extends Controller
                 ]);
             }
         });
-        return redirect()->route('trucks.index')->with('success', 'تم إضافة العربة بنجاح.');
+
+        return redirect()
+            ->route('trucks.index')
+            ->with('success', 'تم إضافة العربة بنجاح.');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified truck.
      */
     public function show(Truck $truck)
     {
@@ -110,7 +180,6 @@ class TruckController extends Controller
             'small_net' => 'برنيكة شبك',
         ];
 
-        // Load relationships
         $truck->load([
             'bill',
             'bill.items',
@@ -125,40 +194,63 @@ class TruckController extends Controller
             'truckFruits.customerPurchases.truckFruit.fruit',
         ]);
 
-        $customers = Customer::select('id', 'name', 'location')->orderBy('location')->orderBy('name')->get();
-        return view('pages.trucks.show', compact('truck', 'customers', 'boxTypes'));
+        $customers = Customer::select('id', 'name', 'location')
+            ->orderBy('location')
+            ->orderBy('name')
+            ->get();
+
+        return view('pages.trucks.show', compact(
+            'truck',
+            'customers',
+            'boxTypes'
+        ));
     }
 
-
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified truck.
      */
     public function edit(Truck $truck)
     {
         $truck->load(['driver', 'truckFruits']);
+
         $drivers = Driver::get();
         $fruits = Fruit::orderBy('name')->get();
         $clients = Client::orderBy('name')->get();
-        return view('pages.trucks.edit', compact('truck', 'drivers', 'fruits', 'clients'));
+
+        return view('pages.trucks.edit', compact(
+            'truck',
+            'drivers',
+            'fruits',
+            'clients'
+        ));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update a truck and synchronize its associated fruits.
      */
     public function update(UpdateTruckRequest $request, Truck $truck)
     {
         DB::transaction(function () use ($request, $truck) {
-            // 1️⃣ Update main truck data
-            $truck->update($request->only('date', 'total_boxes', 'freight', 'driver_id'));
-            // 2️⃣ Collect fruit_id + box_type from request
+            $truck->update(
+                $request->only(
+                    'date',
+                    'total_boxes',
+                    'freight',
+                    'driver_id'
+                )
+            );
+
             $requestKeys = collect($request->fruits)
-                ->map(fn($f) => $f['fruit_id'] . '-' . $f['box_type'])
+                ->map(fn($fruit) => $fruit['fruit_id'] . '-' . $fruit['box_type'])
                 ->all();
-            // 3️⃣ Delete truckFruits not included in request
+
             $truck->truckFruits()
-                ->whereNotIn(DB::raw("CONCAT(fruit_id,'-',box_type)"), $requestKeys)
+                ->whereNotIn(
+                    DB::raw("CONCAT(fruit_id,'-',box_type)"),
+                    $requestKeys
+                )
                 ->delete();
-            // 4️⃣ Update existing or create new
+
             foreach ($request->fruits as $fruitData) {
                 $truck->truckFruits()->updateOrCreate(
                     [
@@ -166,7 +258,7 @@ class TruckController extends Controller
                         'box_type' => $fruitData['box_type'],
                     ],
                     [
-                        'client_id' => $fruitData['client_id'] ?? NULL,
+                        'client_id' => $fruitData['client_id'] ?? null,
                         'number_of_boxes' => $fruitData['number_of_boxes'],
                         'second_class_boxes' => $fruitData['second_class_boxes'] ?? null,
                         'third_class_boxes' => $fruitData['third_class_boxes'] ?? null,
@@ -177,34 +269,21 @@ class TruckController extends Controller
                 );
             }
         });
-        return redirect()->route('trucks.show', $truck->id)->with('success', 'تم تحديث العربة بنجاح.');
+
+        return redirect()
+            ->route('trucks.show', $truck->id)
+            ->with('success', 'تم تحديث العربة بنجاح.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete the specified truck.
      */
     public function destroy(Truck $truck)
     {
         $truck->delete();
-        return redirect()->route('trucks.index')->with('success', 'تم حذف العربة بنجاح.');
-    }
 
-    protected function paginateCollection(
-        Collection $items,
-        int $perPage = 10,
-        string $pageName = 'page'
-    ): LengthAwarePaginator {
-        $page = request()->input($pageName, 1);
-
-        return new LengthAwarePaginator(
-            $items->forPage($page, $perPage)->values(),
-            $items->count(),
-            $perPage,
-            $page,
-            [
-                'path' => request()->url(),
-                'pageName' => $pageName,
-            ]
-        );
+        return redirect()
+            ->route('trucks.index')
+            ->with('success', 'تم حذف العربة بنجاح.');
     }
 }

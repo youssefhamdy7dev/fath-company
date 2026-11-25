@@ -58,7 +58,7 @@
             margin: 0;
         }
 
-        #placesDropdown {
+        #placesDropdownButton {
             min-height: 38px;
             white-space: normal;
         }
@@ -107,77 +107,10 @@
                                 اختر المناطق
                             </label>
 
-                            <div class="dropdown" id="placesDropdownWrapper">
-
-                                <button
-                                    class="btn btn-outline-secondary dropdown-toggle w-100 text-end d-flex justify-content-between align-items-center"
-                                    type="button" id="placesDropdown" data-bs-toggle="dropdown"
-                                    data-bs-auto-close="outside" aria-expanded="false">
-
-                                    <span id="placesDropdownLabel">
-                                        كل المناطق
-                                    </span>
-
-                                </button>
-
-                                <div class="dropdown-menu shadow p-3" id="placesDropdownMenu"
-                                    aria-labelledby="placesDropdown">
-
-                                    {{-- Dropdown Header --}}
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-
-                                        <strong>اختر المناطق</strong>
-
-                                        <button type="button" id="clearPlaceSelection"
-                                            class="btn btn-sm btn-link text-danger text-decoration-none p-0">
-
-                                            إلغاء التحديد
-
-                                        </button>
-
-                                    </div>
-
-                                    <hr class="my-2">
-
-                                    {{-- Checklist --}}
-                                    @foreach ($places as $key => $locations)
-                                        <div class="form-check mb-2">
-
-                                            <input class="form-check-input place-checkbox" type="checkbox" name="places[]"
-                                                value="{{ $key }}" id="place_{{ $loop->index }}"
-                                                @checked(in_array($key, $selectedPlaceKeys))>
-
-                                            <label class="form-check-label" for="place_{{ $loop->index }}">
-
-                                                {{ $key }}
-
-                                            </label>
-
-                                        </div>
-                                    @endforeach
-
-                                    <hr class="my-2">
-
-                                    {{-- Dropdown Footer --}}
-                                    <div class="d-flex justify-content-between align-items-center">
-
-                                        <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllPlaces">
-
-                                            تحديد الكل
-
-                                        </button>
-
-                                        <small class="text-muted" id="placesSelectionCount">
-
-                                            كل المناطق
-
-                                        </small>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
+                            <x-places-dropdown :places="$places" :selected-place-keys="$selectedPlaceKeys" checkbox-name="places[]"
+                                checkbox-class="place-checkbox"
+                                button-class="btn btn-outline-secondary dropdown-toggle w-100 text-end d-flex justify-content-between align-items-center"
+                                :empty-means-all="false" />
 
                         </div>
 
@@ -329,9 +262,6 @@
 
             const placeCheckboxes = document.querySelectorAll('.place-checkbox');
 
-            const clearPlacesButton = document.getElementById('clearPlaceSelection');
-            const selectAllPlacesButton = document.getElementById('selectAllPlaces');
-
             const placesSelectionCount = document.getElementById('placesSelectionCount');
 
             const selectedPlacesAlert = document.getElementById('selectedPlacesAlert');
@@ -408,34 +338,6 @@
             placeCheckboxes.forEach(checkbox => {
 
                 checkbox.addEventListener('change', updatePlacesLabel);
-
-            });
-
-
-            // Clear all selections
-            clearPlacesButton.addEventListener('click', function(event) {
-
-                event.preventDefault();
-
-                placeCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-
-                updatePlacesLabel();
-
-            });
-
-
-            // Select all places
-            selectAllPlacesButton.addEventListener('click', function(event) {
-
-                event.preventDefault();
-
-                placeCheckboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-
-                updatePlacesLabel();
 
             });
 

@@ -6,6 +6,8 @@ use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
 use App\Models\CustomerPayment;
 use App\Models\Customer;
+use App\Services\CustomerFinancialService;
+use App\Support\CustomerLocations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -13,28 +15,15 @@ use Illuminate\Validation\Rule;
 
 class CustomerPaymentController extends Controller
 {
-    protected $locations = [
-        'ميدان صقر',
-        'الكويتية',
-        'صقر',
-        'العمومى بساتين',
-        'البساتين',
-        'سوق البساتين',
-        'السد العالى',
-        'ميدان أبو عبده',
-        'على عبدالعزيز',
-        'أبو بريك',
-        'المطبعة',
-        'الجزيرة',
-        'دار السلام',
-        'البير',
-        'المشير وأبو الوفا',
-        'عبدالحميد مكى',
-        'فايدة كامل',
-        'حسنين الدسوقى',
-        'المعادى',
-        'أخرى'
-    ];
+    protected $locations;
+
+    protected CustomerFinancialService $financialService;
+
+    public function __construct(CustomerFinancialService $financialService)
+    {
+        $this->financialService = $financialService;
+        $this->locations = CustomerLocations::all();
+    }
 
     /**
      * Index: list distinct payment dates (newest first).
@@ -53,11 +42,12 @@ class CustomerPaymentController extends Controller
         });
 
         $customers = Customer::whereNotIn('name', ['نقدية', 'المحل'])
-            ->orderBy('location')->orderBy('name')->get();
+            ->orderBy('location')
+            ->orderBy('name')
+            ->get();
 
         return view('pages.payments.index', compact('dates', 'customers'));
     }
-
 
     /**
      * Display payments for a specific date (page).
@@ -76,49 +66,18 @@ class CustomerPaymentController extends Controller
             ->format('Y-m-d');
 
         /*
-    |--------------------------------------------------------------------------
-    | 1. Define place groups
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 1. Define place groups
+        |--------------------------------------------------------------------------
+        */
 
-        $places = [
-            'صقر والبساتين' => [
-                'ميدان صقر',
-                'الكويتية',
-                'صقر',
-                'العمومى بساتين',
-                'البساتين',
-                'سوق البساتين',
-            ],
-            'السد العالى' => [
-                'السد العالى',
-                'ميدان أبو عبده',
-                'على عبدالعزيز',
-                'أبو بريك',
-            ],
-            'الجزيرة ودار السلام' => [
-                'المطبعة',
-                'الجزيرة',
-                'دار السلام',
-            ],
-            'فايدة كامل وحسنين الدسوقى' => [
-                'البير',
-                'المشير وأبو الوفا',
-                'عبدالحميد مكى',
-                'فايدة كامل',
-                'حسنين الدسوقى',
-                'المعادى',
-            ],
-            'أخرى' => [
-                'أخرى',
-            ],
-        ];
+        $places = CustomerLocations::places();
 
         /*
-    |--------------------------------------------------------------------------
-    | 2. Get selected groups and their locations
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 2. Get selected groups and their locations
+        |--------------------------------------------------------------------------
+        */
 
         // Without places_filter, show all groups by default.
         // With places_filter, use only the submitted groups.
@@ -129,21 +88,14 @@ class CustomerPaymentController extends Controller
             ))
             : array_keys($places);
 
-        $locationToPlace = [];
-
-        foreach ($selectedPlaceKeys as $placeKey) {
-            foreach ($places[$placeKey] as $location) {
-                $locationToPlace[$location] = $placeKey;
-            }
-        }
-
+        $locationToPlace = CustomerLocations::locationToPlace($selectedPlaceKeys);
         $selectedLocations = array_keys($locationToPlace);
 
         /*
-    |--------------------------------------------------------------------------
-    | 3. Fetch payments for selected date
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 3. Fetch payments for selected date
+        |--------------------------------------------------------------------------
+        */
 
         $query = CustomerPayment::query()
             ->select('customer_payments.*')
@@ -180,131 +132,45 @@ class CustomerPaymentController extends Controller
         );
 
         /*
-    |--------------------------------------------------------------------------
-    | 4. Get unique customer IDs
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 4. Get unique customer IDs
+        |--------------------------------------------------------------------------
+        */
 
         $customerIds = $payments
             ->pluck('customer_id')
             ->unique()
             ->values();
 
-        $purchaseTotals = collect();
-        $paymentTotals = collect();
-
-        if ($customerIds->isNotEmpty()) {
-
-            /*
+        /*
         |--------------------------------------------------------------------------
-        | 5. Aggregate purchases BEFORE selected date
+        | 5. Aggregate previous financial totals
         |--------------------------------------------------------------------------
         */
 
-            $effectiveWeight = '
-            COALESCE(
-                cp.total_weight,
-                tf.unified_weight * cp.number_of_boxes
-            )
-        ';
-
-            $effectiveUnitPrice = '
-            COALESCE(
-                cp.unique_unit_price,
-                tf.unified_unit_price
-            )
-        ';
-
-            $effectiveBoxPrice = '
-            COALESCE(
-                cp.unique_box_price,
-                tf.unified_box_price
-            )
-        ';
-
-            $purchaseTotalExpression = "
-            CASE
-                WHEN
-                    COALESCE($effectiveWeight, 0) <> 0
-                    AND COALESCE($effectiveUnitPrice, 0) <> 0
-                THEN
-                    COALESCE(
-                        CAST(
-                            TRUNCATE(
-                                ($effectiveUnitPrice * $effectiveWeight),
-                                0
-                            ) AS SIGNED
-                        ),
-                        0
-                    )
-                ELSE
-                    COALESCE(
-                        CAST(
-                            TRUNCATE(
-                                ($effectiveBoxPrice * cp.number_of_boxes),
-                                0
-                            ) AS SIGNED
-                        ),
-                        0
-                    )
-            END
-        ";
-
-            $purchaseTotals = DB::table('customer_purchase as cp')
-                ->leftJoin('truck_fruit as tf', 'tf.id', '=', 'cp.truck_fruit_id')
-                ->whereIn('cp.customer_id', $customerIds)
-                ->where('cp.date', '<', $carbonDate)
-                ->select('cp.customer_id')
-                ->selectRaw(
-                    "COALESCE(SUM($purchaseTotalExpression), 0) as total"
-                )
-                ->groupBy('cp.customer_id')
-                ->get()
-                ->keyBy('customer_id');
-
-            /*
-        |--------------------------------------------------------------------------
-        | 6. Aggregate payments and discounts BEFORE selected date
-        |--------------------------------------------------------------------------
-        */
-
-            $paymentTotals = DB::table('customer_payments')
-                ->whereIn('customer_id', $customerIds)
-                ->where('date', '<', $carbonDate)
-                ->select('customer_id')
-                ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
-                ->selectRaw('COALESCE(SUM(discount), 0) as total_discount')
-                ->groupBy('customer_id')
-                ->get()
-                ->keyBy('customer_id');
-        }
+        $financialTotals = $this->financialService->totalsByCustomer(
+            $customerIds,
+            $carbonDate
+        );
 
         /*
-    |--------------------------------------------------------------------------
-    | 7. Calculate balances in memory
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 6. Calculate balances in memory
+        |--------------------------------------------------------------------------
+        */
 
         $balancesByCustomer = [];
 
         foreach ($payments->unique('customer_id') as $payment) {
             $customer = $payment->customer;
             $customerId = $customer->id;
+            $totals = $financialTotals->get($customerId);
 
-            $purchases = (int) (
-                $purchaseTotals->get($customerId)->total ?? 0
-            );
+            $purchases = (int) ($totals->purchase_total ?? 0);
+            $totalPayments = (float) ($totals->payment_total ?? 0);
+            $totalDiscounts = (float) ($totals->discount_total ?? 0);
 
-            $previousPayments = $paymentTotals->get($customerId);
-
-            $totalPayments = (float) (
-                $previousPayments->total_amount ?? 0
-            );
-
-            $totalDiscounts = (float) (
-                $previousPayments->total_discount ?? 0
-            );
-
+            // Keep the original final integer cast for this screen.
             $balancesByCustomer[$customerId] = (int) (
                 $customer->account
                 + $purchases
@@ -314,10 +180,10 @@ class CustomerPaymentController extends Controller
         }
 
         /*
-    |--------------------------------------------------------------------------
-    | 8. Load customers for modals / selects
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 7. Load customers for modals / selects
+        |--------------------------------------------------------------------------
+        */
 
         $customers = Customer::whereNotIn('name', ['نقدية', 'المحل'])
             ->orderBy('location')
@@ -327,10 +193,10 @@ class CustomerPaymentController extends Controller
         $displayDate = Carbon::parse($carbonDate);
 
         /*
-    |--------------------------------------------------------------------------
-    | 9. Return AJAX or full page
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 8. Return AJAX or full page
+        |--------------------------------------------------------------------------
+        */
 
         $data = [
             'grouped' => $grouped,
@@ -405,6 +271,7 @@ class CustomerPaymentController extends Controller
     public function destroy(CustomerPayment $payment)
     {
         $payment->delete();
+
         return redirect()->back();
     }
 
@@ -422,7 +289,14 @@ class CustomerPaymentController extends Controller
 
         $today = Carbon::now()->format('Y-m-d');
         $locations = $this->locations;
-        return view('pages.payments.daily', compact('customers', 'today', 'locations'));
+        $places = CustomerLocations::places();
+
+        return view('pages.payments.daily', compact(
+            'customers',
+            'today',
+            'locations',
+            'places'
+        ));
     }
 
     /**
@@ -443,6 +317,7 @@ class CustomerPaymentController extends Controller
 
         // Incoming rows
         $payload = $request->input('payments', []);
+
         // Filter + normalize data
         $toInsert = collect($payload)->map(function ($row) use ($date) {
             return [
@@ -477,6 +352,7 @@ class CustomerPaymentController extends Controller
         if (!empty($duplicates)) {
             $names = Customer::whereIn('id', $duplicates)->pluck('name')->toArray();
             $msg = 'لا يمكن إتمام التسجيل لأن بعض العملاء لديهم تحصيل مسجل في نفس التاريخ: ' . implode(' - ', $names);
+
             return back()->withErrors(['duplicates' => $msg])->withInput();
         }
 
@@ -510,76 +386,26 @@ class CustomerPaymentController extends Controller
 
         $customerIds = $customers->pluck('id');
 
-        // Calculate purchase totals using the same logic as computed_total.
-        $effectiveWeight = '
-        COALESCE(
-            cp.total_weight,
-            tf.unified_weight * cp.number_of_boxes
-        )
-    ';
-
-        $effectiveUnitPrice = '
-        COALESCE(cp.unique_unit_price, tf.unified_unit_price)
-    ';
-
-        $effectiveBoxPrice = '
-        COALESCE(cp.unique_box_price, tf.unified_box_price)
-    ';
-
-        $purchaseTotalExpression = "
-        CASE
-            WHEN COALESCE($effectiveWeight, 0) <> 0
-                 AND COALESCE($effectiveUnitPrice, 0) <> 0
-            THEN COALESCE(
-                CAST(TRUNCATE(
-                    ($effectiveUnitPrice * $effectiveWeight), 0
-                ) AS SIGNED),
-                0
-            )
-            ELSE COALESCE(
-                CAST(TRUNCATE(
-                    ($effectiveBoxPrice * cp.number_of_boxes), 0
-                ) AS SIGNED),
-                0
-            )
-        END
-    ";
-
-        $purchaseTotals = DB::table('customer_purchase as cp')
-            ->leftJoin('truck_fruit as tf', 'tf.id', '=', 'cp.truck_fruit_id')
-            ->whereIn('cp.customer_id', $customerIds)
-            ->where('cp.date', '<', $startDate)
-            ->select('cp.customer_id')
-            ->selectRaw("SUM($purchaseTotalExpression) as purchase_total")
-            ->groupBy('cp.customer_id')
-            ->get()
-            ->keyBy('customer_id');
-
-        // Aggregate payments and discounts before the selected date.
-        $paymentTotals = CustomerPayment::query()
-            ->whereIn('customer_id', $customerIds)
-            ->where('date', '<', $startDate)
-            ->select('customer_id')
-            ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
-            ->selectRaw('COALESCE(SUM(discount), 0) as total_discount')
-            ->groupBy('customer_id')
-            ->get()
-            ->keyBy('customer_id');
+        // Aggregate financial totals before the selected date.
+        $financialTotals = $this->financialService->totalsByCustomer(
+            $customerIds,
+            $startDate->toDateString()
+        );
 
         // Calculate balances without loading individual relationships.
         $balances = [];
 
         foreach ($customers as $customer) {
-            $purchaseTotal = $purchaseTotals->get($customer->id)->purchase_total ?? 0;
+            $totals = $financialTotals->get($customer->id);
 
-            $payment = $paymentTotals->get($customer->id);
-
-            $totalPayments = $payment->total_amount ?? 0;
-            $totalDiscounts = $payment->total_discount ?? 0;
+            $purchaseTotal = $totals->purchase_total ?? 0;
+            $totalPayments = $totals->payment_total ?? 0;
+            $totalDiscounts = $totals->discount_total ?? 0;
 
             $balance = ($customer->account + $purchaseTotal)
                 - ($totalPayments + $totalDiscounts);
 
+            // Preserve the original number transformation for this response.
             $balances[$customer->id] = transform_numeric_value($balance);
         }
 
@@ -590,46 +416,12 @@ class CustomerPaymentController extends Controller
         ]);
     }
 
-
-
     /**
      * Read-only collections overview.
      */
-
     public function paymentsDashboard(Request $request)
     {
-        $places = [
-            'صقر والبساتين' => [
-                'ميدان صقر',
-                'الكويتية',
-                'صقر',
-                'العمومى بساتين',
-                'البساتين',
-                'سوق البساتين',
-            ],
-            'السد العالى' => [
-                'السد العالى',
-                'ميدان أبو عبده',
-                'على عبدالعزيز',
-                'أبو بريك',
-            ],
-            'الجزيرة ودار السلام' => [
-                'المطبعة',
-                'الجزيرة',
-                'دار السلام',
-            ],
-            'فايدة كامل وحسنين الدسوقى' => [
-                'البير',
-                'المشير وأبو الوفا',
-                'عبدالحميد مكى',
-                'فايدة كامل',
-                'حسنين الدسوقى',
-                'المعادى',
-            ],
-            'أخرى' => [
-                'أخرى',
-            ],
-        ];
+        $places = CustomerLocations::places();
 
         $validated = $request->validate([
             'date' => ['nullable', 'date'],
@@ -650,19 +442,12 @@ class CustomerPaymentController extends Controller
         $nextDay = $startDate->copy()->addDay();
 
         /*
-    |--------------------------------------------------------------------------
-    | 1. Fetch all selected customers in ONE query
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 1. Fetch all selected customers in ONE query
+        |--------------------------------------------------------------------------
+        */
 
-        $locationToPlace = [];
-
-        foreach ($selectedPlaceKeys as $placeKey) {
-            foreach ($places[$placeKey] as $location) {
-                $locationToPlace[$location] = $placeKey;
-            }
-        }
-
+        $locationToPlace = CustomerLocations::locationToPlace($selectedPlaceKeys);
         $selectedLocations = array_keys($locationToPlace);
 
         $customers = collect();
@@ -677,10 +462,10 @@ class CustomerPaymentController extends Controller
         }
 
         /*
-    |--------------------------------------------------------------------------
-    | 2. Group customers without additional database queries
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 2. Group customers without additional database queries
+        |--------------------------------------------------------------------------
+        */
 
         $groupedCustomers = $customers->groupBy(
             fn($customer) => $locationToPlace[$customer->location] ?? null
@@ -695,158 +480,58 @@ class CustomerPaymentController extends Controller
             );
         }
 
-        $allCustomerIds = $customers->pluck('id')->all();
-
-        $purchaseTotals = collect();
-        $paymentAggregates = collect();
+        $allCustomerIds = $customers->pluck('id');
 
         /*
-    |--------------------------------------------------------------------------
-    | 3. Aggregate previous purchases in ONE query
-    |--------------------------------------------------------------------------
-    |
-    | Reproduces CustomerPurchase::computed_total:
-    |
-    | - unique_unit_price OR truck_fruit.unified_unit_price
-    | - total_weight OR unified_weight * number_of_boxes
-    | - If weight AND unit price are truthy:
-    |       intval(unit_price * total_weight)
-    | - Otherwise:
-    |       intval(box_price * number_of_boxes)
-    |
-    */
+        |--------------------------------------------------------------------------
+        | 3. Aggregate previous purchases in ONE query
+        |--------------------------------------------------------------------------
+        |
+        | Reproduces CustomerPurchase::computed_total:
+        |
+        | - unique_unit_price OR truck_fruit.unified_unit_price
+        | - total_weight OR unified_weight * number_of_boxes
+        | - If weight AND unit price are truthy:
+        |       intval(unit_price * total_weight)
+        | - Otherwise:
+        |       intval(box_price * number_of_boxes)
+        |
+        */
 
-        if (!empty($allCustomerIds)) {
-            $effectiveWeight = '
-            COALESCE(
-                cp.total_weight,
-                tf.unified_weight * cp.number_of_boxes
-            )
-        ';
+        $financialTotals = $this->financialService->totalsByCustomer(
+            $allCustomerIds,
+            $startDate->toDateString()
+        );
 
-            $effectiveUnitPrice = '
-            COALESCE(
-                cp.unique_unit_price,
-                tf.unified_unit_price
-            )
-        ';
-
-            $effectiveBoxPrice = '
-            COALESCE(
-                cp.unique_box_price,
-                tf.unified_box_price
-            )
-        ';
-
-            $purchaseTotalExpression = "
-    CASE
-        WHEN
-            COALESCE($effectiveWeight, 0) <> 0
-            AND COALESCE($effectiveUnitPrice, 0) <> 0
-        THEN
-            COALESCE(
-                CAST(
-                    TRUNCATE(
-                        ($effectiveUnitPrice * $effectiveWeight),
-                        0
-                    ) AS SIGNED
-                ),
-                0
-            )
-        ELSE
-            COALESCE(
-                CAST(
-                    TRUNCATE(
-                        ($effectiveBoxPrice * cp.number_of_boxes),
-                        0
-                    ) AS SIGNED
-                ),
-                0
-            )
-    END
-";
-
-            $purchaseTotals = DB::table('customer_purchase as cp')
-                ->leftJoin(
-                    'truck_fruit as tf',
-                    'tf.id',
-                    '=',
-                    'cp.truck_fruit_id'
-                )
-                ->whereIn('cp.customer_id', $allCustomerIds)
-                ->where('cp.date', '<', $startDate)
-                ->select('cp.customer_id')
-                ->selectRaw(
-                    "SUM($purchaseTotalExpression) as purchase_total"
-                )
-                ->groupBy('cp.customer_id')
-                ->get()
-                ->keyBy('customer_id');
-
-            /*
+        /*
         |--------------------------------------------------------------------------
         | 4. Aggregate previous and selected-date payments in ONE query
         |--------------------------------------------------------------------------
         */
 
-            $paymentAggregates = CustomerPayment::query()
-                ->whereIn('customer_id', $allCustomerIds)
-                ->where('date', '<', $nextDay)
-                ->select('customer_id')
-
-                // Payments before the selected date
-                ->selectRaw(
-                    'COALESCE(SUM(
-                    CASE WHEN date < ? THEN amount ELSE 0 END
-                ), 0) as previous_amount',
-                    [$startDate]
-                )
-                ->selectRaw(
-                    'COALESCE(SUM(
-                    CASE WHEN date < ? THEN discount ELSE 0 END
-                ), 0) as previous_discount',
-                    [$startDate]
-                )
-
-                // Payments on the selected date
-                ->selectRaw(
-                    'COALESCE(SUM(
-                    CASE
-                        WHEN date >= ? AND date < ?
-                        THEN amount ELSE 0
-                    END
-                ), 0) as amount',
-                    [$startDate, $nextDay]
-                )
-                ->selectRaw(
-                    'COALESCE(SUM(
-                    CASE
-                        WHEN date >= ? AND date < ?
-                        THEN discount ELSE 0
-                    END
-                ), 0) as discount',
-                    [$startDate, $nextDay]
-                )
-                ->groupBy('customer_id')
-                ->get()
-                ->keyBy('customer_id');
-        }
+        $paymentAggregates = $this->financialService
+            ->paymentTotalsBeforeAndDuringDate(
+                $allCustomerIds,
+                $startDate->toDateString(),
+                $nextDay->toDateString()
+            );
 
         /*
-    |--------------------------------------------------------------------------
-    | 5. Calculate balances using aggregated data
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | 5. Calculate balances using aggregated data
+        |--------------------------------------------------------------------------
+        */
 
         $balancesByCustomer = collect();
 
         foreach ($customers as $customer) {
-            $purchaseTotal = (int) (
-                $purchaseTotals->get($customer->id)->purchase_total ?? 0
-            );
+            $totals = $financialTotals->get($customer->id);
+
+            $purchaseTotal = (int) ($totals->purchase_total ?? 0);
 
             $payment = $paymentAggregates->get($customer->id);
 
+            // Keep the original individual casts for previous payments and discounts.
             $previousPayments = (int) ($payment->previous_amount ?? 0);
             $previousDiscounts = (int) ($payment->previous_discount ?? 0);
 

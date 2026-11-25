@@ -6,6 +6,7 @@ use App\Models\Bill;
 use App\Http\Requests\StoreBillRequest;
 use App\Http\Requests\UpdateBillRequest;
 use App\Models\Client;
+use App\Models\Fruit;
 use Illuminate\Support\Facades\DB;
 
 class BillController extends Controller
@@ -15,23 +16,29 @@ class BillController extends Controller
      */
     public function index()
     {
-        $perPage = 5; // bills per client page
+        $clients = Client::whereHas('truckFruit.truck.bill')
+            ->orderBy('name')
+            ->get();
 
-        // Get all clients who have truck_fruits linked to bills
-        $clients = Client::whereHas('truckFruit.truck.bill')->get();
+        $fruits = Fruit::orderBy('name')->get();
 
-        $groupedBills = $clients->map(function ($client) use ($perPage) {
-            // Fetch bills for this client, paginate independently
-            $bills = Bill::whereHas('truck.truckFruits', function ($q) use ($client) {
-                $q->where('client_id', $client->id);
+        $groupedBills = $clients->map(function ($client) {
+            $bills = Bill::whereHas('truck.truckFruits', function ($query) use ($client) {
+                $query->where('client_id', $client->id);
             })
+                ->with([
+                    'truck',
+                    'truck.truckFruits.fruit',
+                    'truck.truckFruits.client',
+                ])
                 ->orderBy('billing_date', 'desc')
-                ->with(['truck', 'truck.truckFruits.fruit', 'truck.truckFruits.client'])
-                ->paginate(
-                    $perPage,
-                    ['*'],
-                    "client_{$client->id}_page" // unique page param per client
-                );
+                ->get();
+
+            $bills->each(function ($bill) {
+                // Keep the original bill price; JavaScript applies the display rounding
+                // to each bill before calculating the filtered client total.
+                $bill->setAttribute('index_bill_price', (float) $bill->bill_price);
+            });
 
             return [
                 'client' => $client,
@@ -39,7 +46,13 @@ class BillController extends Controller
             ];
         });
 
-        return view('pages.bills.index', compact('groupedBills'));
+        $clientOptions = $clients;
+
+        return view('pages.bills.index', compact(
+            'groupedBills',
+            'clientOptions',
+            'fruits'
+        ));
     }
 
     /**
@@ -56,19 +69,29 @@ class BillController extends Controller
     public function store(StoreBillRequest $request)
     {
         DB::transaction(function () use ($request) {
-            $bill = Bill::create($request->only('billing_date', 'percentage', 'expenses', 'grand_total', 'truck_id', 'totals', 'notes'));
+            $bill = Bill::create($request->only(
+                'billing_date',
+                'percentage',
+                'expenses',
+                'grand_total',
+                'truck_id',
+                'totals',
+                'notes'
+            ));
+
             foreach ($request['items'] as $group) {
                 foreach ($group as $item) {
                     $bill->items()->create([
-                        'box_class'     => $item['box_class'],
-                        'price'    => $item['price'],
-                        'total_boxes'   => $item['total_boxes'],
-                        'total_weight'  => $item['total_weight'],
-                        'total_amount'  => $item['total_amount'],
+                        'box_class' => $item['box_class'],
+                        'price' => $item['price'],
+                        'total_boxes' => $item['total_boxes'],
+                        'total_weight' => $item['total_weight'],
+                        'total_amount' => $item['total_amount'],
                     ]);
                 }
             }
         });
+
         return response()->json([
             'message' => 'تم صرف الفاتورة بنجاح',
         ]);
@@ -79,7 +102,12 @@ class BillController extends Controller
      */
     public function show(Bill $bill)
     {
-        $bill->load(['truck', 'truck.truckFruits.fruit', 'truck.truckFruits.client']);
+        $bill->load([
+            'truck',
+            'truck.truckFruits.fruit',
+            'truck.truckFruits.client',
+        ]);
+
         return view('pages.bills.show', compact('bill'));
     }
 
@@ -88,7 +116,12 @@ class BillController extends Controller
      */
     public function edit(Bill $bill)
     {
-        $bill->load(['truck', 'truck.truckFruits.fruit', 'truck.truckFruits.client']);
+        $bill->load([
+            'truck',
+            'truck.truckFruits.fruit',
+            'truck.truckFruits.client',
+        ]);
+
         return view('pages.bills.edit', compact('bill'));
     }
 
@@ -98,18 +131,31 @@ class BillController extends Controller
     public function update(UpdateBillRequest $request, Bill $bill)
     {
         DB::transaction(function () use ($bill, $request) {
-            $bill->update($request->only('billing_date', 'percentage', 'expenses', 'grand_total', 'totals', 'notes'));
-            $itemsIds = collect($request['items'])->pluck('id')->filter()->all();
+            $bill->update($request->only(
+                'billing_date',
+                'percentage',
+                'expenses',
+                'grand_total',
+                'totals',
+                'notes'
+            ));
+
+            $itemsIds = collect($request['items'])
+                ->pluck('id')
+                ->filter()
+                ->all();
+
             $bill->items()->whereNotIn('id', $itemsIds)->delete();
+
             foreach ($request['items'] as $item) {
                 $bill->items()->updateOrCreate(
                     ['id' => $item['id'] ?? null],
                     [
-                        'box_class'     => $item['box_class'],
-                        'price'    => $item['price'],
-                        'total_boxes'   => $item['total_boxes'],
-                        'total_weight'  => $item['total_weight'],
-                        'total_amount'  => $item['total_amount'],
+                        'box_class' => $item['box_class'],
+                        'price' => $item['price'],
+                        'total_boxes' => $item['total_boxes'],
+                        'total_weight' => $item['total_weight'],
+                        'total_amount' => $item['total_amount'],
                     ]
                 );
             }
@@ -127,6 +173,7 @@ class BillController extends Controller
     public function destroy(Bill $bill)
     {
         $bill->delete();
+
         return redirect()->back();
     }
 }

@@ -10,22 +10,40 @@ class CustomerPayment extends Model
 {
     use HasFactory;
 
+    /**
+     * Attributes available for mass assignment.
+     */
     protected $guarded = [];
 
+    /**
+     * Attribute casting.
+     */
     protected $casts = [
         'date' => 'date',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * Relationship: The customer who made the payment.
+     * Get the customer associated with this payment.
      */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * Accessor: Formatted date
+     * Get the payment date formatted as day-month-year.
      */
     public function getFormattedDateAttribute()
     {

@@ -22,62 +22,73 @@
                         <th>إجراءات</th>
                     </tr>
                 </thead>
+
                 <tbody>
+                    {{-- Customer purchases --}}
                     @foreach ($truck->truckFruits as $tf)
                         @foreach ($tf->customerPurchases as $cp)
                             @php
                                 $dangerClass = $cp->computed_class_name == 'نمرة 2' ? 'text-danger' : '';
                             @endphp
+
                             <tr
                                 class="{{ $cp->date == $truck->date ? '' : ($cp->date->isToday() ? 'table-info' : '') }}">
+                                {{-- Iterative number --}}
+                                <td class="{{ $dangerClass }}">
+                                    {{ transform_numeric_value($loop->iteration) }}
+                                </td>
 
-                                {{-- iterative number --}}
-                                <td class="{{ $dangerClass }}">{{ transform_numeric_value($loop->iteration) }}</td>
+                                {{-- Fruit name --}}
+                                <td class="{{ $dangerClass }}">
+                                    {{ $cp->fruit_name }}
+                                </td>
 
-                                {{-- fruit name --}}
-                                <td class="{{ $dangerClass }}">{{ $cp->fruit_name }}</td>
-
-                                {{-- customer --}}
+                                {{-- Customer --}}
                                 <td class="{{ $dangerClass }}">
                                     @if ($cp->customer_name == 'نقدية' || $cp->customer_name == 'المحل')
                                         {{ $cp->customer_name }}
                                     @else
-                                        <a
-                                            href="{{ route('customers.show', $cp->customer->id) }}">{{ $cp->customer_name }}</a>
+                                        <a href="{{ route('customers.show', $cp->customer->id) }}">
+                                            {{ $cp->customer_name }}
+                                        </a>
                                     @endif
                                 </td>
 
-                                {{-- boxes --}}
-                                <td class="{{ $dangerClass }}">{{ transform_numeric_value($cp->number_of_boxes) }}
+                                {{-- Boxes --}}
+                                <td class="{{ $dangerClass }}">
+                                    {{ transform_numeric_value($cp->number_of_boxes) }}
                                 </td>
 
-                                {{-- total weight --}}
-                                <td class="{{ $dangerClass }}" class="fw-bolder fs-5">
-                                    {{ transform_numeric_value($cp->total_weight) ?? '-' }}</td>
+                                {{-- Total weight --}}
+                                <td class="{{ $dangerClass }}">
+                                    {{ transform_numeric_value($cp->total_weight) ?? '-' }}
+                                </td>
 
-                                {{-- unit/box price --}}
+                                {{-- Unit/box price --}}
                                 <td class="{{ $dangerClass }}">
                                     {{ transform_numbers($cp->computed_unit_price ?? $cp->computed_box_price) }}
                                 </td>
 
-                                {{-- total --}}
-                                <td class="{{ $dangerClass }}" class="table-light fw-bolder fs-5">
+                                {{-- Total --}}
+                                <td class="{{ $dangerClass }} table-light fw-bolder fs-5">
                                     {{ transform_numeric_value($cp->computed_total) }}
                                 </td>
 
-                                {{-- class name --}}
-                                <td class="{{ $dangerClass }}">{{ $cp->computed_class_name }}</td>
+                                {{-- Class name --}}
+                                <td class="{{ $dangerClass }}">
+                                    {{ $cp->computed_class_name }}
+                                </td>
 
-                                {{-- date --}}
+                                {{-- Date --}}
                                 <td class="{{ $dangerClass }}">
                                     {{ transform_numbers($cp->date->locale('ar')->translatedFormat('l Y/m/d')) }}
                                 </td>
 
-                                {{-- actions --}}
+                                {{-- Actions --}}
                                 <td class="d-flex justify-content-center gap-2">
                                     <button class="btn btn-warning" data-bs-toggle="modal"
                                         data-bs-target="#editCustomerPurchaseModal{{ $cp->id }}">
-                                        تعديل<i class="ps-1 bi bi-pencil-square"></i>
+                                        تعديل <i class="ps-1 bi bi-pencil-square"></i>
                                     </button>
 
                                     <button class="btn btn-danger btn-sm delete-btn" data-id="{{ $cp->id }}"
@@ -88,6 +99,7 @@
                                     </button>
                                 </td>
                             </tr>
+
                             @push('modals')
                                 @include('pages.trucks.partials.edit-customer-purchase', [
                                     'purchase' => $cp,
@@ -99,8 +111,8 @@
                         @endforeach
                     @endforeach
 
+                    {{-- Totals for multiple fruits --}}
                     @if ($truck->truckFruits->count() > 1)
-
                         @php
                             $grandBoxes = 0;
                             $grandWeight = 0;
@@ -146,35 +158,34 @@
                                         $fruitBoxes += $boxes;
                                         $fruitWeight += $weight;
                                         $fruitAmount += $amount;
+
+                                        $classColor = match ($boxClass) {
+                                            'second' => 'text-danger',
+                                            'third' => 'text-primary',
+                                            default => '',
+                                        };
                                     @endphp
 
-                                    <tr class="table-light fw-bolder text-center ">
-
+                                    <tr class="table-light fw-bolder text-center">
                                         <td colspan="3"></td>
 
-                                        <td
-                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        <td class="{{ $classColor }}">
                                             {{ transform_numeric_value($boxes) }}
                                         </td>
 
-                                        <td
-                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        <td class="{{ $classColor }}">
                                             {{ transform_numeric_value($weight) }}
                                         </td>
 
-                                        <td
-                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        <td class="{{ $classColor }}">
                                             {{ transform_numbers($priceGroup->first()->computed_unit_price ?? $priceGroup->first()->computed_box_price) }}
                                         </td>
 
-                                        <td
-                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        <td class="{{ $classColor }}">
                                             {{ transform_numeric_value($amount) }}
                                         </td>
 
-
-                                        <td
-                                            class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                        <td class="{{ $classColor }}">
                                             {{ match ($boxClass) {
                                                 'first' => 'فاخر',
                                                 'second' => 'نمرة 2',
@@ -184,20 +195,17 @@
                                         </td>
 
                                         <td colspan="2"></td>
-
                                     </tr>
                                 @endforeach
                             @endforeach
 
+                            {{-- Fruit totals --}}
                             <tr class="table-warning fw-bold">
                                 <td colspan="3">إجمالى الصنف</td>
 
                                 <td>{{ transform_numeric_value($fruitBoxes) }}</td>
-
                                 <td>{{ transform_numeric_value($fruitWeight) }}</td>
-
                                 <td></td>
-
                                 <td>{{ transform_numeric_value($fruitAmount) }}</td>
 
                                 <td colspan="3"></td>
@@ -210,20 +218,19 @@
                             @endphp
                         @endforeach
 
+                        {{-- Grand totals --}}
                         <tr class="table-dark fw-bold fs-5">
                             <td colspan="3">الإجمالى العام</td>
 
                             <td>{{ transform_numeric_value($grandBoxes) }}</td>
-
                             <td>{{ transform_numeric_value($grandWeight) }}</td>
-
                             <td></td>
-
                             <td>{{ transform_numeric_value($grandAmount) }}</td>
 
                             <td colspan="3"></td>
                         </tr>
                     @else
+                        {{-- Totals for a single fruit --}}
                         @php
                             $grouped = collect($truck->totals_by_box_class['by_box_class'])
                                 ->sortKeys()
@@ -239,23 +246,28 @@
 
                         @foreach ($grouped as $boxClass => $priceGroups)
                             @foreach ($priceGroups as $price => $totals)
-                                <tr class="table-light fw-bolder fs-5 text-center">
+                                @php
+                                    $classColor = match ($boxClass) {
+                                        'second' => 'text-danger',
+                                        'third' => 'text-primary',
+                                        default => '',
+                                    };
+                                @endphp
 
+                                <tr class="table-light fw-bolder fs-5 text-center">
                                     @if ($loop->parent->first && $loop->first)
-                                        <td rowspan="{{ $rowCount }}" colspan="3">إجمالى العدد</td>
+                                        <td rowspan="{{ $rowCount }}" colspan="3">إجمالى العربة</td>
                                     @endif
 
                                     <td>
                                         {{ transform_numeric_value($totals['total_boxes']) }}
                                     </td>
 
-                                    <td
-                                        class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                    <td class="{{ $classColor }}">
                                         {{ transform_numeric_value($totals['total_weight'] ?? 0) }}
                                     </td>
 
-                                    <td
-                                        class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                    <td class="{{ $classColor }}">
                                         {{ transform_numbers($totals['unit_price'] ?? $totals['box_price']) }}
                                     </td>
 
@@ -265,8 +277,7 @@
                                         </td>
                                     @endif
 
-                                    <td
-                                        class="@if ($boxClass == 'second') text-danger @elseif($boxClass == 'third') text-primary @endif">
+                                    <td class="{{ $classColor }}">
                                         {{ match ($boxClass) {
                                             'first' => 'فاخر',
                                             'second' => 'نمرة 2',
@@ -277,26 +288,26 @@
 
                                     @if ($loop->parent->first && $loop->first)
                                         <td rowspan="{{ $rowCount }}"></td>
+                                        <td rowspan="{{ $rowCount }}"></td>
                                     @endif
-
-                                    <td></td>
                                 </tr>
                             @endforeach
                         @endforeach
-
                     @endif
-
                 </tbody>
             </table>
         </div>
     @endif
 </div>
+
+{{-- Bill actions --}}
 @if (!$truck->bill && $truck->numberOfBoughtBoxes == $truck->total_boxes)
     <div class="text-center mt-4">
         <button class="btn btn-outline-success px-5" data-bs-toggle="modal" data-bs-target="#createBillModal">
             صرف الفاتورة <i class="bi bi-receipt-cutoff ps-1"></i>
         </button>
     </div>
+
     @push('modals')
         @include('pages.bills.partials.add-bill-modal', ['truck' => $truck])
     @endpush
@@ -306,21 +317,25 @@
             عرض الفاتورة <i class="bi bi-receipt-cutoff ps-1"></i>
         </button>
     </div>
+
     @push('modals')
         @include('pages.bills.partials.view-bill-modal', ['truck' => $truck])
     @endpush
 @endif
 
+{{-- Purchase deletion modal --}}
 @push('modals')
     <x-modal id="deletePurchaseModal" title="تأكيد الحذف" body="هل أنت متأكد من حذف هذه المشتروات؟" confirmText="تأكيد"
         cancelText="إلغاء" confirmButtonClass="btn-danger btn-reload" />
 @endpush
 
+{{-- Hidden delete form --}}
 <form id="deletePurchaseForm" method="POST" class="d-none">
     @csrf
     @method('DELETE')
 </form>
 
+{{-- Purchase deletion handler --}}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         initDeleteHandler('purchase');
@@ -328,8 +343,8 @@
         const deleteButtons = document.querySelectorAll('.delete-btn');
         const deleteForm = document.getElementById('deletePurchaseForm');
 
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
                 deleteForm.action = this.dataset.url;
             });
         });

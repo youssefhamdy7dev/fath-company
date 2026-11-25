@@ -2,24 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Fruit;
 use App\Http\Requests\StoreFruitRequest;
 use App\Http\Requests\UpdateFruitRequest;
+use App\Models\Fruit;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 class FruitController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display all fruits.
      */
     public function index()
     {
         $fruits = Fruit::orderBy('name')->get();
+
         return view('pages.fruits.index', compact('fruits'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a fruit.
      */
     public function create()
     {
@@ -27,25 +29,25 @@ class FruitController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new fruit.
      */
     public function store(StoreFruitRequest $request)
     {
         $data = $request->validated();
 
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $filename = time() . '_' . $image->getClientOriginalName();
-            $image->storeAs('fruits', $filename, 'public');
-            $data['image'] = $filename;
+            $data['image'] = $this->storeImage($request->file('image'));
         }
 
         Fruit::create($data);
-        return redirect()->route('fruits.index')->with('success', 'تم إضافة الصنف بنجاح');
+
+        return redirect()
+            ->route('fruits.index')
+            ->with('success', 'تم إضافة الصنف بنجاح');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified fruit.
      */
     public function show(Fruit $fruit)
     {
@@ -53,7 +55,7 @@ class FruitController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified fruit.
      */
     public function edit(Fruit $fruit)
     {
@@ -61,43 +63,61 @@ class FruitController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified fruit.
      */
     public function update(UpdateFruitRequest $request, Fruit $fruit)
     {
         $data = $request->validated();
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if ($fruit->image && Storage::disk('public')->exists('fruits/' . $fruit->image)) {
-                Storage::disk('public')->delete('fruits/' . $fruit->image);
-            }
 
-            $image = $request->file('image');
-            $filename = time() . '_' . $image->getClientOriginalName();
-            $image->storeAs('fruits', $filename, 'public');
-            $data['image'] = $filename;
+        if ($request->hasFile('image')) {
+            $this->deleteImage($fruit->image);
+
+            $data['image'] = $this->storeImage($request->file('image'));
         }
 
         $fruit->update($data);
 
-        return redirect()->route('fruits.index')->with('success', 'تم تحديث الصنف بنجاح');
+        return redirect()
+            ->route('fruits.index')
+            ->with('success', 'تم تحديث الصنف بنجاح');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete the specified fruit and its image.
      */
     public function destroy(Fruit $fruit)
     {
-        // Delete the image file if it exists
-        if ($fruit->image && Storage::disk('public')->exists('fruits/' . $fruit->image)) {
-            Storage::disk('public')->delete('fruits/' . $fruit->image);
-        }
+        $this->deleteImage($fruit->image);
 
-        // Delete the fruit record
         $fruit->delete();
 
-        // Redirect back with success message
-        return redirect()->route('fruits.index')->with('success', 'تم حذف الصنف بنجاح.');
+        return redirect()
+            ->route('fruits.index')
+            ->with('success', 'تم حذف الصنف بنجاح.');
+    }
+
+    /**
+     * Store an uploaded fruit image.
+     */
+    private function storeImage(UploadedFile $image): string
+    {
+        $filename = time() . '_' . $image->getClientOriginalName();
+
+        $image->storeAs('fruits', $filename, 'public');
+
+        return $filename;
+    }
+
+    /**
+     * Delete a fruit image if it exists.
+     */
+    private function deleteImage($filename): void
+    {
+        if (
+            $filename &&
+            Storage::disk('public')->exists('fruits/' . $filename)
+        ) {
+            Storage::disk('public')->delete('fruits/' . $filename);
+        }
     }
 }

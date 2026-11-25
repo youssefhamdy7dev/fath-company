@@ -2,7 +2,6 @@
 
 @section('content')
     <div class="card shadow-sm p-4 text-center">
-
         {{-- Back to index --}}
         <div class="d-flex justify-content-end w-100 mb-3">
             <x-button href="{{ route('fruits.index') }}" color="info">
@@ -13,7 +12,6 @@
         <h1 class="mb-4">تفاصيل الصنف</h1>
 
         <div class="card card-background w-75 mx-auto">
-
             {{-- Fruit Name --}}
             <div class="mb-3">
                 <h4>إسم الصنف:</h4>
@@ -23,6 +21,7 @@
             {{-- Fruit Image --}}
             <div class="mb-3">
                 <h4>الصورة الحالية:</h4>
+
                 @if ($fruit->image && Storage::disk('public')->exists('fruits/' . $fruit->image))
                     <img src="{{ asset('storage/fruits/' . $fruit->image) }}" alt="{{ $fruit->name }}"
                         class="img-thumbnail" style="max-width: 300px;">
@@ -30,7 +29,6 @@
                     <p class="text-muted">لم يتم إرفاق صورة</p>
                 @endif
             </div>
-
         </div>
 
         {{-- Edit + Delete --}}
@@ -51,7 +49,6 @@
             @csrf
             @method('DELETE')
         </form>
-
     </div>
 
     {{-- Delete Confirmation Modal --}}

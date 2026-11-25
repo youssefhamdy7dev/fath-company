@@ -1,16 +1,25 @@
 @props(['id', 'label', 'name', 'options' => [], 'selected' => null])
 
+@php
+    $currentSelection = old($name, $selected);
+@endphp
+
 <div class="mb-3">
     <label for="{{ $id }}" class="form-label">{{ $label }}</label>
+
     <select id="{{ $id }}" name="{{ $name }}"
         {{ $attributes->merge(['class' => 'form-select ' . ($errors->has($name) ? 'is-invalid' : '')]) }}>
-        <option disabled selected>اختر {{ strtolower($label) }} ...</option>
+        <option disabled {{ blank($currentSelection) ? 'selected' : '' }}>
+            اختر {{ strtolower($label) }} ...
+        </option>
+
         @foreach ($options as $option)
-            <option value="{{ $option }}" {{ old($name, $selected) == $option ? 'selected' : '' }}>
+            <option value="{{ $option }}" {{ $currentSelection == $option ? 'selected' : '' }}>
                 {{ $option }}
             </option>
         @endforeach
     </select>
+
     @error($name)
         <div class="invalid-feedback">{{ $message }}</div>
     @enderror

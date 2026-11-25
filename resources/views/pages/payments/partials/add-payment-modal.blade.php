@@ -3,46 +3,58 @@
     <form id="addCustomerPaymentForm" method="POST" action="{{ route('customer-payments.store') }}">
         @csrf
 
+        {{-- Customer --}}
         <div class="mb-3">
             <label for="customer_id" class="form-label">الزبون</label>
+
             <select name="customer_id" id="customer_id" class="form-select">
                 <option disabled selected>إختيار الزبون...</option>
+
                 @foreach ($customers as $customer)
-                    <option value="{{ $customer->id }}">{{ $customer->name }} ( {{ $customer->location }} )</option>
+                    <option value="{{ $customer->id }}">
+                        {{ $customer->name }} ( {{ $customer->location }} )
+                    </option>
                 @endforeach
             </select>
+
             <div class="invalid-feedback"></div>
         </div>
 
-        <dv class="mb-3">
+        {{-- Amount --}}
+        <div class="mb-3">
             <label for="amount" class="form-label">المبلغ</label>
             <input name="amount" type="number" class="form-control">
             <div class="invalid-feedback"></div>
-        </dv>
+        </div>
 
+        {{-- Discount --}}
         <div class="mb-3">
             <label for="discount" class="form-label">الخصم</label>
             <input name="discount" type="number" step="0.01" class="form-control">
             <div class="invalid-feedback"></div>
         </div>
 
+        {{-- Date --}}
         <div class="mb-3">
             <label for="date" class="form-label">التاريخ</label>
+
             <input type="text" name="date" id="date" class="form-control globdatepicker"
                 value="{{ $pageDate ?? \Carbon\Carbon::now()->format('Y-m-d') }}" autocomplete="off">
+
             <div class="invalid-feedback"></div>
         </div>
 
+        {{-- Submit --}}
         <div class="mt-3 text-center">
             <button type="submit" class="btn btn-primary px-4">
-                إضافة<i class="ps-1 bi bi-plus-circle"></i>
+                إضافة <i class="ps-1 bi bi-plus-circle"></i>
             </button>
         </div>
     </form>
 
     <script>
-        document.getElementById('addCustomerPaymentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        document.getElementById('addCustomerPaymentForm').addEventListener('submit', function(event) {
+            event.preventDefault();
 
             const form = this;
             const url = form.getAttribute('action');
@@ -50,12 +62,18 @@
 
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
+
             submitBtn.classList.add('disabled');
             submitBtn.innerHTML = 'جاري الإضافة... <i class="ps-1 bi bi-hourglass-split"></i>';
 
             // Clear previous errors
-            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            form.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+            form.querySelectorAll('.is-invalid').forEach(element => {
+                element.classList.remove('is-invalid');
+            });
+
+            form.querySelectorAll('.invalid-feedback').forEach(element => {
+                element.textContent = '';
+            });
 
             fetch(url, {
                     method: 'POST',
@@ -65,31 +83,40 @@
                     },
                     body: formData
                 })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.errors) {
+                .then(response => response.json())
+                .then(response => {
+                    if (response.errors) {
                         // Handle validation errors
-                        for (const [field, messages] of Object.entries(res.errors)) {
+                        for (const [field, messages] of Object.entries(response.errors)) {
                             const input = form.querySelector(`[name="${field}"]`);
-                            if (input) {
-                                input.classList.add('is-invalid');
-                                const feedback = input.parentElement.querySelector('.invalid-feedback');
-                                if (feedback) {
-                                    feedback.textContent = messages[0];
-                                }
+
+                            if (!input) {
+                                continue;
+                            }
+
+                            input.classList.add('is-invalid');
+
+                            const feedback = input.parentElement.querySelector('.invalid-feedback');
+
+                            if (feedback) {
+                                feedback.textContent = messages[0];
                             }
                         }
+
                         submitBtn.classList.remove('disabled');
                         submitBtn.innerHTML = originalBtnText;
-                    } else {
-                        // Handle success
-                        window.location.href = res.redirect_url || window.location.href;
+                        return;
                     }
+
+                    // Handle success
+                    window.location.href = response.redirect_url || window.location.href;
                 })
-                .catch(err => {
-                    console.error('Error:', err);
+                .catch(error => {
+                    console.error('Error:', error);
+
                     submitBtn.classList.remove('disabled');
                     submitBtn.innerHTML = originalBtnText;
+
                     alert('حدث خطأ أثناء الإرسال');
                 });
         });

@@ -34,7 +34,7 @@
                 </thead>
 
                 <tbody>
-                    @forelse ($payments as $index => $payment)
+                    @forelse ($payments as $payment)
                         @php
                             $customerBalance = $payment->customer->getBalanceBefore($payment->date);
                             $remaining = $customerBalance - ($payment->amount + ($payment->discount ?? 0));
@@ -43,7 +43,8 @@
                             <td>{{ transform_numeric_value($loop->iteration) }}</td>
 
                             <td class="fs-5 text-danger fw-bolder">
-                                {{ transform_numeric_value($customerBalance) }}</td>
+                                {{ transform_numeric_value($customerBalance) }}
+                            </td>
 
                             <td class="fs-5 text-success fw-bolder">
                                 {{ transform_numeric_value($payment->amount) }}
@@ -72,7 +73,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-muted">
+                            <td colspan="7" class="text-muted">
                                 لا توجد عمليات تحصيل لهذا الزبون.
                             </td>
                         </tr>

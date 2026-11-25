@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Client;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
+use App\Models\Client;
 
 class ClientController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display all clients.
      */
     public function index()
     {
         $clients = Client::orderBy('name')->get();
+
         return view('pages.clients.index', compact('clients'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a client.
      */
     public function create()
     {
@@ -26,16 +27,19 @@ class ClientController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a new client.
      */
     public function store(StoreClientRequest $request)
     {
         Client::create($request->validated());
-        return redirect()->route('clients.index')->with('success', 'تمت إضافة العميل بنجاح.');
+
+        return redirect()
+            ->route('clients.index')
+            ->with('success', 'تمت إضافة العميل بنجاح.');
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified client.
      */
     public function show(Client $client)
     {
@@ -43,7 +47,7 @@ class ClientController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Show the form for editing the specified client.
      */
     public function edit(Client $client)
     {
@@ -51,20 +55,26 @@ class ClientController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified client.
      */
     public function update(UpdateClientRequest $request, Client $client)
     {
         $client->update($request->validated());
-        return redirect()->route('clients.index')->with('success', 'تم تعديل بيانات العميل بنجاح.');
+
+        return redirect()
+            ->route('clients.index')
+            ->with('success', 'تم تعديل بيانات العميل بنجاح.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete the specified client.
      */
     public function destroy(Client $client)
     {
         $client->delete();
-        return redirect()->route('clients.index')->with('success', 'تم حذف العميل بنجاح.');
+
+        return redirect()
+            ->route('clients.index')
+            ->with('success', 'تم حذف العميل بنجاح.');
     }
 }

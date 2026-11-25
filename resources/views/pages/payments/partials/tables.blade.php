@@ -2,7 +2,7 @@
 
     <div class="card shadow-sm mb-4" data-place-group>
 
-        {{-- Group Heading --}}
+        {{-- Main Place Heading (unchanged) --}}
         <div class="card-header bg-dark text-white">
 
             <h5 class="mb-0">
@@ -26,21 +26,11 @@
                         <thead class="table-secondary">
 
                             <tr>
-
                                 <th>حساب الزبون</th>
-
                                 <th>اسم الزبون</th>
-
                                 <th>المنطقة</th>
-
-                                <th class="text-success fw-bold">
-                                    التحصيل
-                                </th>
-
-                                <th class="text-danger fw-bold">
-                                    ما تبقى بعد التحصيل
-                                </th>
-
+                                <th class="text-success fw-bold">التحصيل</th>
+                                <th class="text-danger fw-bold">ما تبقى بعد التحصيل</th>
                             </tr>
 
                         </thead>
@@ -48,7 +38,24 @@
                         {{-- Table Body --}}
                         <tbody>
 
+                            @php
+                                $currentLocation = null;
+                            @endphp
+
                             @foreach ($customers as $customer)
+                                {{-- New Location Group Heading --}}
+                                @if ($currentLocation !== $customer->location)
+                                    @php
+                                        $currentLocation = $customer->location;
+                                    @endphp
+
+                                    <tr class="table-primary">
+                                        <td colspan="5" class="fw-bold text-center">
+                                            {{ $currentLocation ?: 'بدون منطقة' }}
+                                        </td>
+                                    </tr>
+                                @endif
+
                                 @php
                                     $payment = $paymentsByCustomer->get($customer->id);
 
@@ -60,7 +67,7 @@
                                     $paymentAmount = (int) ($payment->amount ?? 0);
                                     $discountAmount = (int) ($payment->discount ?? 0);
 
-                                    $remaining = $balanceBefore - ($paymentAmount + $discountAmount);
+                                    $remaining = $balanceBefore - $paymentAmount - $discountAmount;
                                 @endphp
 
                                 <tr data-customer-row data-customer-name="{{ $customer->name }}">
@@ -72,14 +79,10 @@
 
                                     {{-- Customer Name --}}
                                     <td>
-
                                         <a href="{{ route('customers.show', $customer->id) }}"
                                             class="text-decoration-none">
-
                                             {{ $customer->name }}
-
                                         </a>
-
                                     </td>
 
                                     {{-- Location --}}
@@ -89,13 +92,11 @@
 
                                     {{-- Payment --}}
                                     <td class="text-success fw-bold">
-
-                                        @if ($payment && $paymentAmount > 0)
+                                        @if ($paymentAmount > 0)
                                             {{ transform_numeric_value($paymentAmount) }}
                                         @else
                                             -
                                         @endif
-
                                     </td>
 
                                     {{-- Remaining --}}

@@ -1,23 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    @php
-        $places = [
-            'صقر والبساتين' => ['ميدان صقر', 'الكويتية', 'صقر', 'العمومى بساتين', 'البساتين', 'سوق البساتين'],
-            'السد العالى' => ['السد العالى', 'ميدان أبو عبده', 'على عبدالعزيز', 'أبو بريك'],
-            'الجزيرة ودار السلام' => ['المطبعة', 'الجزيرة', 'دار السلام'],
-            'فايدة كامل وحسنين الدسوقى' => [
-                'البير',
-                'المشير وأبو الوفا',
-                'عبدالحميد مكى',
-                'فايدة كامل',
-                'حسنين الدسوقى',
-                'المعادى',
-            ],
-            'أخرى' => ['أخرى'],
-        ];
-    @endphp
-
     <div class="container" dir="rtl">
         <x-alerts.session-status />
 
@@ -63,57 +46,13 @@
                 <div class="text-center">
                     <label class="form-label fw-bolder d-block">المنطقة:</label>
 
-                    <div class="dropdown" id="placesDropdownWrapper">
-                        <button class="btn btn-outline-primary dropdown-toggle w-100" type="button"
-                            id="filterLocationDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                            aria-expanded="false">
-                            <span id="selectedLocationsCount">كل المناطق</span>
-                        </button>
-
-                        <div class="dropdown-menu p-3 shadow" id="placesDropdownMenu"
-                            aria-labelledby="filterLocationDropdown">
-
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong>اختر المناطق</strong>
-
-                                <button type="button" class="btn btn-sm btn-link text-danger p-0" id="clearLocations">
-                                    إلغاء التحديد
-                                </button>
-                            </div>
-
-                            <hr class="my-2">
-
-                            @foreach ($places as $placeName => $placeLocations)
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input location-checkbox" type="checkbox"
-                                        value="{{ $placeName }}" data-locations='@json($placeLocations)'
-                                        id="placeFilter{{ $loop->index }}">
-
-                                    <label class="form-check-label" for="placeFilter{{ $loop->index }}">
-                                        {{ $placeName }}
-                                    </label>
-                                </div>
-                            @endforeach
-
-                            <hr class="my-2">
-
-                            <div class="d-flex justify-content-between">
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllLocations">
-                                    تحديد الكل
-                                </button>
-
-                                <small class="text-muted align-self-center" id="locationsSelectionCount">
-                                    كل المناطق
-                                </small>
-                            </div>
-                        </div>
-                    </div>
+                    <x-places-dropdown :places="$places" checkbox-class="location-checkbox"
+                        button-class="btn btn-outline-primary" menu-max-height="350px" :empty-means-all="true" />
                 </div>
             </div>
 
             {{-- Selected places display --}}
             <div id="selectedLocationsDisplay" class="alert alert-info text-center py-2 mb-3" style="display: none;">
-
                 <strong>المناطق المختارة:</strong>
                 <span id="selectedLocationsNames"></span>
             </div>
@@ -188,51 +127,9 @@
     <x-scroll-button />
 
     <style>
-        #placesDropdownWrapper {
-            position: relative;
-            width: 300px;
-        }
-
-        #placesDropdownMenu {
-            width: 100%;
-            min-width: 300px;
-            max-height: 350px;
-            overflow-y: auto;
-            text-align: right;
+        /* Preserve the daily page's dropdown stacking behavior. */
+        .places-dropdown-menu {
             z-index: 1055;
-        }
-
-        #placesDropdownMenu .form-check {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding-right: 0;
-        }
-
-        #placesDropdownMenu .form-check-input {
-            float: none;
-            margin: 0;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-
-        #placesDropdownMenu .form-check-label {
-            cursor: pointer;
-            flex: 1;
-        }
-
-        #placesDropdownMenu .form-check:hover {
-            background-color: rgba(0, 0, 0, 0.04);
-        }
-
-        @media (max-width: 576px) {
-            #placesDropdownWrapper {
-                width: 220px;
-            }
-
-            #placesDropdownMenu {
-                min-width: 220px;
-            }
         }
     </style>
 
@@ -243,10 +140,8 @@
 
             // Places filter elements
             const locationCheckboxes = document.querySelectorAll('.location-checkbox');
-            const selectedLocationsCount = document.getElementById('selectedLocationsCount');
-            const locationsSelectionCount = document.getElementById('locationsSelectionCount');
-            const clearLocationsButton = document.getElementById('clearLocations');
-            const selectAllLocationsButton = document.getElementById('selectAllLocations');
+            const selectedLocationsCount = document.getElementById('placesDropdownLabel');
+            const locationsSelectionCount = document.getElementById('placesSelectionCount');
             const selectedLocationsDisplay = document.getElementById('selectedLocationsDisplay');
             const selectedLocationsNames = document.getElementById('selectedLocationsNames');
 
@@ -335,24 +230,6 @@
             // Location checkbox changes
             locationCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', applyLocationFilter);
-            });
-
-            // Clear all selected places
-            clearLocationsButton.addEventListener('click', function() {
-                locationCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-
-                applyLocationFilter();
-            });
-
-            // Select all places
-            selectAllLocationsButton.addEventListener('click', function() {
-                locationCheckboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-
-                applyLocationFilter();
             });
 
             // Initialize dropdown information and filtering

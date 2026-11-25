@@ -1,5 +1,21 @@
-@if ($grouped->isEmpty())
-    <p class="text-center fw-bolder fs-5 text-muted">لا يوجد</p>
+@php
+    // Combine the selected place groups and regroup by actual customer location.
+    $paymentsByLocation = $grouped->flatten(1)->groupBy(fn($payment) => $payment->customer->location);
+
+    // Match the location order used in customers/index.blade.php.
+    $locationOrder = \App\Support\CustomerLocations::all();
+
+    $paymentsByLocation = $paymentsByLocation->sortBy(function ($payments, $location) use ($locationOrder) {
+        $position = array_search($location, $locationOrder, true);
+
+        return $position === false ? PHP_INT_MAX : $position;
+    });
+@endphp
+
+@if ($paymentsByLocation->isEmpty())
+    <p class="text-center fw-bolder fs-5 text-muted">
+        لا يوجد
+    </p>
 @else
     <div class="table-responsive">
         <table class="table table-secondary table-bordered table-hover text-center align-middle">
@@ -16,9 +32,12 @@
             </thead>
 
             <tbody>
-                @php $i = 1; @endphp
+                @php
+                    $i = 1;
+                @endphp
 
-                @foreach ($grouped as $location => $payments)
+                @foreach ($paymentsByLocation as $location => $payments)
+                    {{-- Actual customer location heading --}}
                     <tr class="table-info">
                         <td colspan="7" class="fw-bold">
                             {{ $location }}
@@ -64,14 +83,14 @@
                             </td>
 
                             <td class="d-flex justify-content-center gap-2">
-                                <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
                                     data-bs-target="#editCustomerPaymentModal{{ $payment->id }}">
                                     تعديل
                                     <i class="ps-1 bi bi-pencil-square"></i>
                                 </button>
 
-                                <button class="btn btn-danger btn-sm delete-btn" data-id="{{ $payment->id }}"
-                                    data-name="{{ $payment->customer->name }}"
+                                <button type="button" class="btn btn-danger btn-sm delete-btn"
+                                    data-id="{{ $payment->id }}" data-name="{{ $payment->customer->name }}"
                                     data-url="{{ route('customer-payments.destroy', $payment->id) }}"
                                     data-bs-toggle="modal" data-bs-target="#deletePaymentModal">
                                     حذف
@@ -109,8 +128,8 @@
         const deleteButtons = document.querySelectorAll('.delete-btn');
         const deleteForm = document.getElementById('deletePaymentForm');
 
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
                 deleteForm.action = this.dataset.url;
             });
         });

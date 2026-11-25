@@ -4,63 +4,10 @@
 
 @section('content')
     <style>
-        /* Places dropdown - matching Payments by Date */
-        #placesDropdownWrapper {
-            position: relative;
-            width: 300px;
-        }
-
-        #filterLocationDropdown {
-            width: 100%;
-            text-align: right;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #placesDropdownMenu {
-            width: 100%;
-            min-width: 300px;
-            overflow-y: auto;
-            text-align: right;
-            direction: rtl;
-            padding: 1rem;
-        }
-
-        #placesDropdownMenu .form-check {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding-right: 0;
-            margin-bottom: 0.5rem;
-        }
-
-        #placesDropdownMenu .form-check-input {
-            float: none;
-            margin: 0;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-
-        #placesDropdownMenu .form-check-label {
-            cursor: pointer;
-            flex: 1;
-        }
-
         #selectedPlacesAlert {
             display: none;
             direction: rtl;
             text-align: right;
-        }
-
-        @media (max-width: 576px) {
-            #placesDropdownWrapper {
-                width: 220px;
-            }
-
-            #placesDropdownMenu {
-                min-width: 220px;
-            }
         }
     </style>
 
@@ -78,58 +25,10 @@
 
                 <label>المنطقة:</label>
 
-                {{-- Places multi-select - matching Payments by Date --}}
-                <div class="dropdown" id="placesDropdownWrapper">
-
-                    <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button"
-                        id="filterLocationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        كل المناطق
-                    </button>
-
-                    <div class="dropdown-menu shadow" id="placesDropdownMenu" aria-labelledby="filterLocationDropdown">
-
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-
-                            <strong>اختر المناطق</strong>
-
-                            <button type="button" class="btn btn-sm btn-link text-danger p-0" id="clearPlaceSelection">
-                                إلغاء التحديد
-                            </button>
-
-                        </div>
-
-                        <hr class="my-2">
-
-                        @foreach ($places as $placeName => $placeLocations)
-                            <div class="form-check">
-
-                                <input class="form-check-input place-filter-checkbox" type="checkbox"
-                                    value="{{ $placeName }}" id="placeFilter{{ $loop->index }}"
-                                    data-locations='@json($placeLocations)' checked>
-
-                                <label class="form-check-label" for="placeFilter{{ $loop->index }}">
-                                    {{ $placeName }}
-                                </label>
-
-                            </div>
-                        @endforeach
-
-                        <hr class="my-2">
-
-                        <div class="d-flex justify-content-between">
-
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllPlaces">
-                                تحديد الكل
-                            </button>
-
-                            <small class="text-muted align-self-center" id="placesSelectionCount">
-                                كل المناطق
-                            </small>
-
-                        </div>
-
-                    </div>
-                </div>
+                {{-- Places multi-select --}}
+                <x-places-dropdown :places="$places" :selected-place-keys="array_keys($places)" checkbox-class="place-filter-checkbox"
+                    button-class="btn btn-outline-secondary d-flex justify-content-between align-items-center"
+                    :empty-means-all="true" />
 
             </div>
 
@@ -209,19 +108,7 @@
             );
 
             const dropdownButton = document.getElementById(
-                'filterLocationDropdown'
-            );
-
-            const clearButton = document.getElementById(
-                'clearPlaceSelection'
-            );
-
-            const selectAllButton = document.getElementById(
-                'selectAllPlaces'
-            );
-
-            const selectionCount = document.getElementById(
-                'placesSelectionCount'
+                'placesDropdownLabel'
             );
 
             const selectedPlacesAlert = document.getElementById(
@@ -381,8 +268,6 @@
 
                     dropdownButton.textContent = 'كل المناطق';
 
-                    selectionCount.textContent = 'كل المناطق';
-
                     selectedPlacesText.textContent =
                         'يتم عرض جميع المناطق';
 
@@ -393,9 +278,6 @@
                     dropdownButton.textContent =
                         `تم تحديد ${checkedCount} مناطق`;
 
-                    selectionCount.textContent =
-                        `${checkedCount} من ${allPlaceKeys.length}`;
-
                     const selectedNames = Array.from(placeCheckboxes)
                         .filter(checkbox => checkbox.checked)
                         .map(checkbox => checkbox.value);
@@ -404,13 +286,6 @@
                         selectedNames.join('، ');
 
                     selectedPlacesAlert.style.display = 'block';
-
-                }
-
-                if (checkedCount === 0) {
-
-                    selectionCount.textContent =
-                        `كل المناطق (${effectiveCount})`;
 
                 }
 
@@ -512,49 +387,7 @@
 
             /*
             |--------------------------------------------------------------------------
-            | 9. Clear selected places
-            |--------------------------------------------------------------------------
-            */
-
-            clearButton.addEventListener('click', function(event) {
-
-                event.preventDefault();
-
-                placeCheckboxes.forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-
-                updatePlaceSelection();
-
-                applyFilters();
-
-            });
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | 10. Select all places
-            |--------------------------------------------------------------------------
-            */
-
-            selectAllButton.addEventListener('click', function(event) {
-
-                event.preventDefault();
-
-                placeCheckboxes.forEach(checkbox => {
-                    checkbox.checked = true;
-                });
-
-                updatePlaceSelection();
-
-                applyFilters();
-
-            });
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | 11. Initial setup
+            | 9. Initial setup
             |--------------------------------------------------------------------------
             */
 

@@ -6,19 +6,22 @@
         @csrf
 
         <div class="row g-3">
-
             {{-- Row 1 --}}
             <div class="col-md-6">
                 {{-- الزبون --}}
                 <div class="form-div">
                     <label for="customer_id" class="form-label">الزبون</label>
+
                     <select name="customer_id" id="customer_id" class="form-select">
                         <option disabled selected>إختيار الزبون...</option>
+
                         @foreach ($customers as $customer)
-                            <option value="{{ $customer->id }}">{{ $customer->name }} - ( {{ $customer->location }} )
+                            <option value="{{ $customer->id }}">
+                                {{ $customer->name }} - ( {{ $customer->location }} )
                             </option>
                         @endforeach
                     </select>
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -27,10 +30,12 @@
                 {{-- الصنف (truck_fruit) --}}
                 <div class="form-div">
                     <label for="truck_fruit_id" class="form-label">الصنف</label>
+
                     <select name="truck_fruit_id" id="truck_fruit_id" class="form-select">
                         @if ($truck->truckFruits->count() > 1)
                             <option disabled selected>إختيار الصنف...</option>
                         @endif
+
                         @foreach ($truck->truckFruits as $truckFruit)
                             <option value="{{ $truckFruit->id }}"
                                 {{ $truckFruit->id === $truck->auto_selectable_truck_fruit_id ? 'selected' : '' }}
@@ -38,12 +43,14 @@
                                 {{ $truckFruit->fruit->name }}
                                 -
                                 {{ $boxTypes[$truckFruit->box_type] ?? $truckFruit->box_type }}
+
                                 @if ($truckFruit->is_fully_purchased)
                                     (خالص)
                                 @endif
                             </option>
                         @endforeach
                     </select>
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -53,15 +60,24 @@
                 {{-- فئة --}}
                 <div class="form-div">
                     <label for="box_class" class="form-label">فئة المشتروات</label>
+
                     <select name="box_class" id="box_class" class="form-select">
                         @php
                             $hasLowClasses = $truck->numberOfLowClassBoughtBoxes >= $truck->numberOfLowClassBoxes;
                         @endphp
-                        <option {{ $hasLowClasses ? 'disabled' : 'disabled selected' }}>إختيار الفئة...</option>
-                        <option value="first" {{ $hasLowClasses ? 'selected' : '' }}>فاخر</option>
+
+                        <option {{ $hasLowClasses ? 'disabled' : 'disabled selected' }}>
+                            إختيار الفئة...
+                        </option>
+
+                        <option value="first" {{ $hasLowClasses ? 'selected' : '' }}>
+                            فاخر
+                        </option>
+
                         <option value="second">نمرة 2</option>
                         <option value="third">نمرة 3 / هالك</option>
                     </select>
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -70,8 +86,10 @@
                 {{-- عدد البرانيك --}}
                 <div class="form-div">
                     <label for="number_of_boxes" class="form-label">عدد البرانيك</label>
+
                     <input type="number" name="number_of_boxes" id="number_of_boxes" class="form-control"
                         min="1">
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -80,7 +98,9 @@
                 {{-- إجمالي الوزن الصافي --}}
                 <div class="form-div">
                     <label for="total_weight" class="form-label">إجمالي الوزن الصافي</label>
+
                     <input type="number" name="total_weight" id="total_weight" class="form-control" step="0.01">
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -90,8 +110,10 @@
                 {{-- الفئة بالكيلو (خاص) --}}
                 <div class="form-div">
                     <label for="unique_unit_price" class="form-label">الفئة بالكيلو (خاص)</label>
+
                     <input type="number" name="unique_unit_price" id="unique_unit_price" class="form-control"
                         step="0.01">
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -100,7 +122,9 @@
                 {{-- الفئة بالبرنيكة (خاص) --}}
                 <div class="form-div">
                     <label for="unique_box_price" class="form-label">الفئة بالبرنيكة (خاص)</label>
+
                     <input type="number" name="unique_box_price" id="unique_box_price" class="form-control">
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -109,9 +133,11 @@
                 {{-- تاريخ الشراء --}}
                 <div class="form-div">
                     <label for="date" class="form-label">التاريخ</label>
+
                     <input type="text" name="date" id="date" class="form-control purchasedate"
                         value="{{ $truck->date->isToday() ? $truck->date->format('Y-m-d') : old('date') }}"
                         data-min-date="{{ $truck->date->format('Y-m-d') }}" autocomplete="off">
+
                     <div class="invalid-feedback"></div>
                 </div>
             </div>
@@ -119,11 +145,12 @@
 
         <div class="mt-3 text-center">
             <button type="submit" class="btn btn-primary px-4">
-                إضافة<i class="ps-1 bi bi-plus-circle"></i>
+                إضافة <i class="ps-1 bi bi-plus-circle"></i>
             </button>
         </div>
     </form>
 
+    {{-- AJAX form submission --}}
     <script>
         document.getElementById('addCustomerPurchaseForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -134,12 +161,18 @@
 
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
+
             submitBtn.classList.add('disabled');
             submitBtn.innerHTML = 'جاري الإضافة... <i class="ps-1 bi bi-hourglass-split"></i>';
 
             // Clear previous errors
-            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            form.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+            form.querySelectorAll('.is-invalid').forEach(element => {
+                element.classList.remove('is-invalid');
+            });
+
+            form.querySelectorAll('.invalid-feedback').forEach(element => {
+                element.textContent = '';
+            });
 
             fetch(url, {
                     method: 'POST',
@@ -149,33 +182,40 @@
                     },
                     body: formData
                 })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.errors) {
+                .then(response => response.json())
+                .then(response => {
+                    if (response.errors) {
                         // Handle validation errors
-                        for (const [field, messages] of Object.entries(res.errors)) {
+                        for (const [field, messages] of Object.entries(response.errors)) {
                             const input = form.querySelector(`[name="${field}"]`);
+
                             if (!input) continue;
+
                             input.classList.add('is-invalid');
+
                             const feedback = input
                                 .closest('.form-div')
                                 ?.querySelector('.invalid-feedback');
+
                             if (feedback) {
                                 feedback.textContent = messages[0];
-                                feedback.style.display = 'block'; // 🔥 THIS IS THE KEY
+                                feedback.style.display = 'block';
                             }
                         }
+
                         submitBtn.classList.remove('disabled');
                         submitBtn.innerHTML = originalBtnText;
                     } else {
                         // Handle success
-                        window.location.href = res.redirect_url;
+                        window.location.href = response.redirect_url;
                     }
                 })
-                .catch(err => {
-                    console.error('Error:', err);
+                .catch(error => {
+                    console.error('Error:', error);
+
                     submitBtn.classList.remove('disabled');
                     submitBtn.innerHTML = originalBtnText;
+
                     alert('حدث خطأ أثناء الإرسال');
                 });
         });

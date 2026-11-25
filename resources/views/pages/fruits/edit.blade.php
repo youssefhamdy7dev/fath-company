@@ -11,22 +11,22 @@
 
         <h3 class="mb-4">تعديل الصنف</h3>
 
+        {{-- Form --}}
         <form method="POST" action="{{ route('fruits.update', $fruit->id) }}" enctype="multipart/form-data"
             class="form-control" dir="rtl" autocomplete="off">
             @csrf
             @method('PUT')
 
             <div class="container w-50">
-
                 {{-- Name --}}
                 <x-form.input id="name" name="name" label="إسم الصنف" value="{{ old('name', $fruit->name) }}" />
 
                 {{-- Image Upload --}}
                 <div class="form-div mb-3">
-
                     {{-- Current image preview --}}
                     <div class="d-flex flex-column align-items-center mb-2">
                         <label>الصورة الحالية</label>
+
                         @if ($fruit->image && Storage::disk('public')->exists('fruits/' . $fruit->image))
                             <img src="{{ asset('storage/fruits/' . $fruit->image) }}" alt="{{ $fruit->name }}"
                                 class="img-thumbnail" style="max-width: 400px;">
@@ -35,8 +35,9 @@
                         @endif
                     </div>
 
-
-                    <label for="image" class="form-label fw-semibold">إرفاق صورة جديدة</label>
+                    <label for="image" class="form-label fw-semibold">
+                        إرفاق صورة جديدة
+                    </label>
 
                     {{-- Hidden file input --}}
                     <input type="file" name="image" id="image"
@@ -58,7 +59,9 @@
                     </div>
 
                     @error('image')
-                        <div class="invalid-feedback d-block text-danger text-end">{{ $message }}</div>
+                        <div class="invalid-feedback d-block text-danger text-end">
+                            {{ $message }}
+                        </div>
                     @enderror
                 </div>
 
@@ -86,12 +89,13 @@
                 fileName.textContent = 'تم إرفاق: ' + fileInput.files[0].name;
                 fileButton.disabled = true;
                 cancelButton.classList.remove('d-none');
-            } else {
-                resetFileInput();
+                return;
             }
+
+            resetFileInput();
         });
 
-        cancelButton.addEventListener('click', () => resetFileInput());
+        cancelButton.addEventListener('click', resetFileInput);
 
         function resetFileInput() {
             fileInput.value = '';

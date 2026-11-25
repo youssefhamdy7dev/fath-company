@@ -97,64 +97,6 @@
     {{-- Template for JS clone --}}
     @include('pages.trucks.partials.fruit-block-template')
 
-    <script>
-        // Same JavaScript as create.blade.php
-        document.addEventListener('DOMContentLoaded', function() {
-            const fruitsContainer = document.getElementById('fruitsContainer');
-            const addFruitBtn = document.getElementById('addFruitBtn');
-            const template = document.getElementById('fruitBlockTemplate').innerHTML.trim();
-
-            function getCurrentMaxIndex() {
-                const blocks = fruitsContainer.querySelectorAll('.fruit-block');
-                let max = -1;
-                blocks.forEach(block => {
-                    const idx = parseInt(block.dataset.index);
-                    if (!isNaN(idx) && idx > max) max = idx;
-                });
-                return max;
-            }
-
-            function addFruitBlock() {
-                const nextIndex = getCurrentMaxIndex() + 1;
-                let html = template.replace(/__INDEX__/g, nextIndex).replace(/__LABEL__/g, nextIndex + 1);
-
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                const block = tempDiv.firstElementChild;
-
-                fruitsContainer.appendChild(block);
-            }
-
-            function ensureAtLeastOne() {
-                if (fruitsContainer.querySelectorAll('.fruit-block').length === 0) {
-                    addFruitBlock();
-                }
-            }
-
-            function reindexFruitBlocks() {
-                fruitsContainer.querySelectorAll('.fruit-block').forEach((b, i) => {
-                    b.dataset.index = i;
-                    b.querySelector('strong').textContent = 'الصنف رقم ' + (i + 1);
-
-                    b.querySelectorAll('select, input').forEach(input => {
-                        const name = input.name.replace(/\[\d+\]/, `[${i}]`);
-                        input.name = name;
-                    });
-                });
-            }
-
-            addFruitBtn.addEventListener('click', addFruitBlock);
-
-            fruitsContainer.addEventListener('click', function(e) {
-                if (e.target.closest('.remove-fruit-btn')) {
-                    const block = e.target.closest('.fruit-block');
-                    block.remove();
-                    ensureAtLeastOne();
-                    reindexFruitBlocks();
-                }
-            });
-
-            ensureAtLeastOne();
-        });
-    </script>
+    {{-- Fruits blocks behavior --}}
+    @include('pages.trucks.partials.fruit-blocks-script')
 @endsection

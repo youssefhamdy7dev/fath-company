@@ -2,28 +2,58 @@
 
 namespace App\Models;
 
+use App\Services\CustomerFinancialService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
+    /**
+     * Attributes available for mass assignment.
+     */
     protected $guarded = [];
 
+    /**
+     * Attributes appended to the model's array and JSON representations.
+     */
     protected $appends = [
         'current_balance',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Get the customer's payments.
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(CustomerPayment::class);
     }
 
+    /**
+     * Get the customer's purchases.
+     */
     public function purchases(): HasMany
     {
         return $this->hasMany(CustomerPurchase::class);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Calculate the customer's current balance.
+     *
+     * Balance = Account + Purchases - Payments - Discounts.
+     */
     public function getCurrentBalanceAttribute(): int
     {
         $this->loadMissing([
@@ -39,18 +69,30 @@ class Customer extends Model
         $totalPayments = $this->payments->sum('amount');
         $totalDiscounts = $this->payments->sum('discount');
 
-        return ($this->account + $totalPurchases)
-            - ($totalPayments + $totalDiscounts);
+        return app(CustomerFinancialService::class)->calculateBalance(
+            $this->account,
+            $totalPurchases,
+            $totalPayments,
+            $totalDiscounts
+        );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Balance Calculations
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Calculate the customer's balance before a given date.
+     *
+     * Only purchases and payments dated before the supplied date
+     * are included.
+     */
     public function getBalanceBefore($date): int
     {
-        // N+1 queries avoidance
-        // $this->load(['payments', 'purchases', 'purchases.truckFruit']);
-
         $cutoff = Carbon::parse($date)->format('Y-m-d');
 
-        // Load only the needed purchases & payments BEFORE the given date
         $purchases = $this->purchases()
             ->whereDate('date', '<', $cutoff)
             ->with('truckFruit')
@@ -60,18 +102,18 @@ class Customer extends Model
             ->whereDate('date', '<', $cutoff)
             ->get();
 
-        // Sum purchases (using the computed_total accessor)
         $totalPurchases = $purchases->sum(function ($purchase) {
             return $purchase->computed_total;
         });
 
-        // Sum payments
-        $totalPayments  = $payments->sum('amount');
+        $totalPayments = $payments->sum('amount');
         $totalDiscounts = $payments->sum('discount');
 
-        // Same formula as current_balance
-        $balance = ($this->account + $totalPurchases) - ($totalPayments + $totalDiscounts);
-
-        return $balance;
+        return app(CustomerFinancialService::class)->calculateBalance(
+            $this->account,
+            $totalPurchases,
+            $totalPayments,
+            $totalDiscounts
+        );
     }
 }

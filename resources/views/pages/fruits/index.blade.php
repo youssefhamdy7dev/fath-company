@@ -16,44 +16,56 @@
 
         <h1 class="mb-5">قائمة الأصناف</h1>
 
-        <table class="table table-info table-bordered table-hover align-middle text-center">
-            <thead>
-                <tr class="table-dark">
-                    <th>#</th>
-                    <th>إسم الصنف</th>
-                    <th>الإجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($fruits as $index => $fruit)
-                    <tr>
-                        <th scope="row">{{ transform_numeric_value($loop->iteration) }}</th>
-                        <td>{{ $fruit->name }}</td>
-                        <td class="d-flex justify-content-center gap-1">
-                            {{-- Show --}}
-                            <a href="{{ route('fruits.show', $fruit->id) }}" class="btn btn-info btn-sm">
-                                عرض <i class="bi bi-eye-fill"></i>
-                            </a>
-
-                            {{-- Edit --}}
-                            <a href="{{ route('fruits.edit', $fruit->id) }}" class="btn btn-warning btn-sm">
-                                تعديل <i class="bi bi-pencil-square"></i>
-                            </a>
-
-                            {{-- Delete --}}
-                            <button class="btn btn-danger btn-sm delete-btn" data-id="{{ $fruit->id }}"
-                                data-name="{{ $fruit->name }}" data-bs-toggle="modal" data-bs-target="#deleteFruitModal">
-                                حذف<i class="bi bi-trash"></i>
-                            </button>
-                        </td>
+        <div class="table-responsive w-100">
+            <table class="table table-info table-bordered table-hover align-middle text-center">
+                <thead>
+                    <tr class="table-dark">
+                        <th>#</th>
+                        <th>إسم الصنف</th>
+                        <th>الإجراءات</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="text-center text-muted">لا يوجد أصناف مضافة حتى الآن.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                    @forelse ($fruits as $fruit)
+                        <tr>
+                            <th scope="row">
+                                {{ transform_numeric_value($loop->iteration) }}
+                            </th>
+
+                            <td>{{ $fruit->name }}</td>
+
+                            <td>
+                                <div class="d-flex justify-content-center gap-1">
+                                    {{-- Show --}}
+                                    <a href="{{ route('fruits.show', $fruit->id) }}" class="btn btn-info btn-sm">
+                                        عرض <i class="bi bi-eye-fill"></i>
+                                    </a>
+
+                                    {{-- Edit --}}
+                                    <a href="{{ route('fruits.edit', $fruit->id) }}" class="btn btn-warning btn-sm">
+                                        تعديل <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    {{-- Delete --}}
+                                    <button type="button" class="btn btn-danger btn-sm delete-btn"
+                                        data-id="{{ $fruit->id }}" data-name="{{ $fruit->name }}" data-bs-toggle="modal"
+                                        data-bs-target="#deleteFruitModal">
+                                        حذف <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">
+                                لا يوجد أصناف مضافة حتى الآن.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {{-- Single Reusable Delete Modal --}}
@@ -67,6 +79,8 @@
     </form>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => initDeleteHandler('fruit'));
+        document.addEventListener('DOMContentLoaded', () => {
+            initDeleteHandler('fruit');
+        });
     </script>
 @endsection
