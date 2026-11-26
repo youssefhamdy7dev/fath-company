@@ -135,7 +135,7 @@
                     <label for="date" class="form-label">التاريخ</label>
 
                     <input type="text" name="date" id="date" class="form-control purchasedate"
-                        value="{{ $truck->date->isToday() ? $truck->date->format('Y-m-d') : old('date') }}"
+                        value="{{ \App\Support\BusinessDate::isToday($truck->date) ? $truck->date->format('Y-m-d') : old('date') }}"
                         data-min-date="{{ $truck->date->format('Y-m-d') }}" autocomplete="off">
 
                     <div class="invalid-feedback"></div>

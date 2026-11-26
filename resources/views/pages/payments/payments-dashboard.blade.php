@@ -178,7 +178,7 @@
         <div class="row g-3 mt-3" id="paymentsDailyTotals">
 
             {{-- Total Before Collection --}}
-            <div class="col-md-4">
+            <div class="col-md-3">
 
                 <div class="card shadow-sm border-dark daily-total-card">
 
@@ -199,7 +199,7 @@
             </div>
 
             {{-- Total Payments --}}
-            <div class="col-md-4">
+            <div class="col-md-3">
 
                 <div class="card shadow-sm border-success daily-total-card">
 
@@ -219,8 +219,28 @@
 
             </div>
 
+            {{-- Total Discounts --}}
+            <div class="col-md-3">
+
+                <div class="card shadow-sm border-warning daily-total-card">
+
+                    <div class="card-body text-center">
+
+                        <h5 class="text-warning fw-bold mb-3">
+                            إجمالى الخصومات
+                        </h5>
+
+                        <h3 id="totalDailyDiscounts" class="text-warning fw-bolder mb-0">
+                            0
+                        </h3>
+
+                    </div>
+                </div>
+
+            </div>
+
             {{-- Total Remaining --}}
-            <div class="col-md-4">
+            <div class="col-md-3">
 
                 <div class="card shadow-sm border-danger daily-total-card">
 
@@ -401,6 +421,7 @@
 
                 let totalBeforeCollection = 0;
                 let totalPayments = 0;
+                let totalDiscounts = 0;
                 let totalRemaining = 0;
 
                 const groupCards = container.querySelectorAll('[data-place-group]');
@@ -442,9 +463,14 @@
                             cells[3]?.innerText
                         );
 
+                        // Column 5: الخصم
+                        totalDiscounts += parseAmount(
+                            cells[4]?.innerText
+                        );
+
                         // Column 5: ما تبقى بعد التحصيل
                         totalRemaining += parseAmount(
-                            cells[4]?.innerText
+                            cells[5]?.innerText
                         );
 
                     });
@@ -471,6 +497,9 @@
 
                 document.getElementById('totalDailyPayments').textContent =
                     formatter.format(totalPayments);
+
+                document.getElementById('totalDailyDiscounts').textContent =
+                    formatter.format(totalDiscounts);
 
                 document.getElementById('totalDailyRemaining').textContent =
                     formatter.format(totalRemaining);

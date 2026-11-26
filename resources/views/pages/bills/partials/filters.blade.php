@@ -1,26 +1,26 @@
 <div class="row g-3 w-100 mb-4 text-start">
 
     {{-- Start date --}}
-    <div class="col-md-6">
+    <div class="col-md-3">
         <label for="billDateFrom" class="form-label">
-            من تاريخ
+            فواتير بداية من تاريخ:
         </label>
 
         <input type="date" id="billDateFrom" class="globdatepicker form-control">
     </div>
 
     {{-- End date --}}
-    <div class="col-md-6">
+    <div class="col-md-3">
         <label for="billDateTo" class="form-label">
-            إلى تاريخ
+            إلى تاريخ:
         </label>
 
         <input type="date" id="billDateTo" class="globdatepicker form-control">
     </div>
 
     {{-- Clients --}}
-    <div class="col-md-6">
-        <label class="form-label">العملاء</label>
+    <div class="col-md-3">
+        <label class="form-label">العملاء:</label>
 
         <div class="dropdown bill-filter-dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
@@ -61,8 +61,8 @@
     </div>
 
     {{-- Fruits --}}
-    <div class="col-md-6">
-        <label class="form-label">الأصناف</label>
+    <div class="col-md-3">
+        <label class="form-label">الأصناف:</label>
 
         <div class="dropdown bill-filter-dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button"

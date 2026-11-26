@@ -1,14 +1,21 @@
 import 'bootstrap';
 import * as bootstrap from 'bootstrap';
 window.bootstrap = bootstrap;
+
 import './bootstrap';
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { Arabic } from "flatpickr/dist/l10n/ar.js";
 import Choices from 'choices.js';
 
-// Initialize flatpickr globally for all inputs with class `.datepicker`
+// Initialize Flatpickr and Choices
 document.addEventListener('DOMContentLoaded', function () {
+
+    // Get business date calculated by Laravel (10:00 AM cutoff)
+    const businessDate = document.querySelector(
+        'meta[name="business-date"]'
+    )?.content;
+
     // Customer Select
     const customerSelect = document.getElementById("customer_id");
 
@@ -23,45 +30,57 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Date
-    let minimumDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    // Date pickers
+    let minimumDate = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1
+    );
+
     const datepickerElement = document.querySelector(".purchasedate");
+
     if (datepickerElement) {
         const minDateStr = datepickerElement.dataset.minDate;
-        minimumDate = new Date(minDateStr);
+
+        if (minDateStr) {
+            minimumDate = new Date(minDateStr);
+        }
     }
 
+    // Customer purchase date
     flatpickr(".purchasedate", {
         dateFormat: "Y-m-d",
         locale: Arabic,
         allowInput: true,
         minDate: minimumDate,
-        maxDate: new Date(),
+        maxDate: businessDate,
     });
 
+    // General date picker
     flatpickr(".datepicker", {
         dateFormat: "Y-m-d",
         locale: Arabic,
         allowInput: true,
-        minDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        maxDate: new Date(),
+        minDate: new Date(
+            new Date().getFullYear(),
+            new Date().getMonth(),
+            1
+        ),
+        maxDate: businessDate,
     });
 
+    // Global date picker
     flatpickr(".globdatepicker", {
         dateFormat: "Y-m-d",
         locale: Arabic,
         allowInput: true,
-        maxDate: new Date(),
+        maxDate: businessDate,
     });
 });
 
+
 /**
  * Initialize AJAX search + location filter for customers index page.
- * Expects:
- * - #searchName input for name filter
- * - #filterLocation select for location filter
- * - #customersTableBody as the table body container
- * - delete modals per customer (handled below)
  */
 // window.initCustomerIndex = function () {
 //     const searchInput = document.getElementById('searchName');
@@ -84,11 +103,9 @@ document.addEventListener('DOMContentLoaded', function () {
 //             .catch(err => console.error('Error fetching customers:', err));
 //     };
 
-//     // Trigger search on typing or location change
 //     searchInput.addEventListener('input', fetchCustomers);
 //     locationSelect.addEventListener('change', fetchCustomers);
 
-//     // Handle modal delete confirmations (one per customer)
 //     document.querySelectorAll('[id^="deleteCustomerModal"][id$="Confirm"]').forEach(btn => {
 //         btn.addEventListener('click', function () {
 //             const modalId = this.id.replace('Confirm', '');
@@ -103,15 +120,16 @@ document.addEventListener('DOMContentLoaded', function () {
 /**
  * Generic delete modal handler
  * Works for any resource index page (clients, fruits, etc.)
- * Expects:
- * - delete buttons with class `.delete-btn`
- * - each button having data-id and data-name
- * - a single modal with id `#deleteModal`
- * - a hidden form with id `#deleteForm`
  */
 window.initDeleteHandler = function (resourceName) {
-    const deleteModal = document.getElementById(`delete${capitalize(resourceName)}Modal`);
-    const deleteForm = document.getElementById(`delete${capitalize(resourceName)}Form`);
+    const deleteModal = document.getElementById(
+        `delete${capitalize(resourceName)}Modal`
+    );
+
+    const deleteForm = document.getElementById(
+        `delete${capitalize(resourceName)}Form`
+    );
+
     const resourceTranslation = {
         fruit: 'الصنف',
         client: 'العميل',
@@ -123,7 +141,8 @@ window.initDeleteHandler = function (resourceName) {
         payment: 'تحصيل العميل',
         bill: 'الفاتورة'
     };
-    if (!deleteModal || !deleteForm) return; // Exit if not found
+
+    if (!deleteModal || !deleteForm) return;
 
     const modalBody = deleteModal.querySelector('.modal-body');
     const confirmBtn = deleteModal.querySelector('[id$="Confirm"]');
@@ -135,14 +154,17 @@ window.initDeleteHandler = function (resourceName) {
             const itemType = resourceTranslation[resourceName] || '';
 
             // Update modal body
-            modalBody.textContent = `هل أنت متأكد من حذف ${itemType}: ${itemName}؟`;
+            modalBody.textContent =
+                `هل أنت متأكد من حذف ${itemType}: ${itemName}؟`;
 
             // Update form action
             deleteForm.action = `/${resourceName}s/${itemId}`;
         });
     });
 
-    confirmBtn.addEventListener('click', () => deleteForm.submit());
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => deleteForm.submit());
+    }
 };
 
 /**
@@ -156,7 +178,7 @@ function capitalize(str) {
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-reload').forEach((button) => {
         button.addEventListener('click', function () {
-            this.classList.add('disabled'); // Optional: add Bootstrap disabled style
+            this.classList.add('disabled');
         });
     });
 });

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\CustomerFinancialService;
+use App\Services\StrawberryFinancialService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,7 +29,7 @@ class Customer extends Model
     */
 
     /**
-     * Get the customer's payments.
+     * Get the customer's normal payments.
      */
     public function payments(): HasMany
     {
@@ -36,11 +37,27 @@ class Customer extends Model
     }
 
     /**
-     * Get the customer's purchases.
+     * Get the customer's normal purchases.
      */
     public function purchases(): HasMany
     {
         return $this->hasMany(CustomerPurchase::class);
+    }
+
+    /**
+     * Get the customer's Strawberry payments.
+     */
+    public function strawberryPayments(): HasMany
+    {
+        return $this->hasMany(StrawberryCustomerPayment::class);
+    }
+
+    /**
+     * Get the customer's Strawberry purchases.
+     */
+    public function strawberryPurchases(): HasMany
+    {
+        return $this->hasMany(StrawberryCustomerPurchase::class);
     }
 
     /*
@@ -50,7 +67,7 @@ class Customer extends Model
     */
 
     /**
-     * Calculate the customer's current balance.
+     * Calculate the customer's normal current balance.
      *
      * Balance = Account + Purchases - Payments - Discounts.
      */
@@ -77,6 +94,15 @@ class Customer extends Model
         );
     }
 
+    /**
+     * Calculate the customer's Strawberry current balance.
+     */
+    public function getStrawberryCurrentBalanceAttribute(): int
+    {
+        return app(StrawberryFinancialService::class)
+            ->getCurrentBalance($this);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Balance Calculations
@@ -84,10 +110,7 @@ class Customer extends Model
     */
 
     /**
-     * Calculate the customer's balance before a given date.
-     *
-     * Only purchases and payments dated before the supplied date
-     * are included.
+     * Calculate the customer's normal balance before a given date.
      */
     public function getBalanceBefore($date): int
     {
@@ -115,5 +138,14 @@ class Customer extends Model
             $totalPayments,
             $totalDiscounts
         );
+    }
+
+    /**
+     * Calculate the customer's Strawberry balance before a given date.
+     */
+    public function getStrawberryBalanceBefore($date): int
+    {
+        return app(StrawberryFinancialService::class)
+            ->getBalanceBefore($this, $date);
     }
 }

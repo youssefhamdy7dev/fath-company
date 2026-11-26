@@ -39,7 +39,7 @@
             <label for="date" class="form-label">التاريخ</label>
 
             <input type="text" name="date" id="date" class="form-control globdatepicker"
-                value="{{ $pageDate ?? \Carbon\Carbon::now()->format('Y-m-d') }}" autocomplete="off">
+                value="{{ $pageDate ?? \App\Support\BusinessDate::toDateString() }}" autocomplete="off">
 
             <div class="invalid-feedback"></div>
         </div>

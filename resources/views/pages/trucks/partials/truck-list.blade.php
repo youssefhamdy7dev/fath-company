@@ -19,7 +19,7 @@
 
         <tbody>
             @forelse ($trucks as $truck)
-                <tr class="{{ $truck->date->isToday() ? 'table-info' : '' }}">
+                <tr class="{{ \App\Support\BusinessDate::isToday($truck->date) ? 'table-info' : '' }}">
                     <th scope="row">
                         @if ($hasFilters)
                             {{ transform_numbers($loop->iteration) }}

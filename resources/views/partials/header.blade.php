@@ -65,7 +65,12 @@
                 </x-nav-item>
 
                 <x-nav-item>
-                    <x-nav-link href="#" :active="request()->routeIs('strawberries.*')">
+                    <x-nav-link href="{{ route('strawberry') }}" :active="request()->routeIs(
+                        'strawberry',
+                        'strawberry-trucks.*',
+                        'strawberry-customer-purchases.*',
+                        'strawberry-customer-payments.*',
+                    )">
                         <i class="bi bi-basket2 me-1 text-danger"></i> الفراولة
                     </x-nav-link>
                 </x-nav-item>

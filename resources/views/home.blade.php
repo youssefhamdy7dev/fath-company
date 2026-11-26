@@ -10,7 +10,7 @@
             {{-- Dashboard Sections --}}
             <x-dashboard-card title="العمومى" icon="bi-clipboard-data-fill" color="dark" :link="route('payments-dashboard')" />
 
-            <x-dashboard-card title="الفراولة" icon="bi-basket2" color="danger" :link="route('home')" />
+            <x-dashboard-card title="الفراولة" icon="bi-basket2" color="danger" :link="route('strawberry')" />
 
             <x-dashboard-card title="الزبائن" icon="bi-people-fill" color="primary" :link="route('customers.index')" />
 

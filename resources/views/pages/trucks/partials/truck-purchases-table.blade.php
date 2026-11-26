@@ -32,7 +32,7 @@
                             @endphp
 
                             <tr
-                                class="{{ $cp->date == $truck->date ? '' : ($cp->date->isToday() ? 'table-info' : '') }}">
+                                class="{{ $cp->date == $truck->date ? '' : (\App\Support\BusinessDate::isToday($cp->date) ? 'table-info' : '') }}">
                                 {{-- Iterative number --}}
                                 <td class="{{ $dangerClass }}">
                                     {{ transform_numeric_value($loop->iteration) }}
@@ -70,7 +70,7 @@
                                 </td>
 
                                 {{-- Total --}}
-                                <td class="{{ $dangerClass }} table-light fw-bolder fs-5">
+                                <td class="{{ $dangerClass }} fw-bolder fs-6">
                                     {{ transform_numeric_value($cp->computed_total) }}
                                 </td>
 

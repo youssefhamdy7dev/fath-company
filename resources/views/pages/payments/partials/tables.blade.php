@@ -30,6 +30,7 @@
                                 <th>اسم الزبون</th>
                                 <th>المنطقة</th>
                                 <th class="text-success fw-bold">التحصيل</th>
+                                <th class="text-warning fw-bold">الخصم</th>
                                 <th class="text-danger fw-bold">ما تبقى بعد التحصيل</th>
                             </tr>
 
@@ -50,7 +51,7 @@
                                     @endphp
 
                                     <tr class="table-primary">
-                                        <td colspan="5" class="fw-bold text-center">
+                                        <td colspan="6" class="fw-bold text-center">
                                             {{ $currentLocation ?: 'بدون منطقة' }}
                                         </td>
                                     </tr>
@@ -94,6 +95,16 @@
                                     <td class="text-success fw-bold">
                                         @if ($paymentAmount > 0)
                                             {{ transform_numeric_value($paymentAmount) }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+
+
+                                    {{-- Discount --}}
+                                    <td class="text-warning fw-bold">
+                                        @if ($discountAmount > 0)
+                                            {{ transform_numeric_value($discountAmount) }}
                                         @else
                                             -
                                         @endif

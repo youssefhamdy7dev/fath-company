@@ -4,9 +4,9 @@
             {{ $group['client']->name }}
         </h4>
 
-        <div class="fw-bold text-danger bill-client-total d-none">
-            إجمالي الفواتير:
-            <span class="bill-total-value">0</span>
+        <div class="fw-bold text-secondary bill-client-total d-none">
+            إجمالي الفواتير حسب الفلتر:
+            <span class="bill-total-value text-success">0</span>
         </div>
     </div>
 

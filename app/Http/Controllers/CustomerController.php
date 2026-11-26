@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Services\CustomerFinancialService;
+use App\Support\BusinessDate;
 use App\Support\CustomerLocations;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -331,7 +332,7 @@ class CustomerController extends Controller
         // Use provided date or today (Y-m-d).
         $date = $request->date
             ? Carbon::parse($request->date)->format('Y-m-d')
-            : now()->format('Y-m-d');
+            : BusinessDate::toDateString();
 
         // Fetch customers who had purchases on that exact date.
         $customers = $this->fetchCustomersWithPurchasesOnDate($date);

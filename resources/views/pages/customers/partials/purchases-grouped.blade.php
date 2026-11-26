@@ -12,14 +12,14 @@
         @endphp
         <h4 class="mt-4 text-primary fw-bold text-center">
             {{ transform_numbers(\Carbon\Carbon::parse($dateKey)->locale('ar')->translatedFormat('l ( d-m-Y )')) }}
-            @if (\Carbon\Carbon::parse($dateKey)->isToday())
+            @if (\App\Support\BusinessDate::isToday($dateKey))
                 <span class="text-danger">- اليوم</span>
             @endif
         </h4>
         <div class="card p-4 shadow-sm mb-4">
             <div class="table-responsive mb-4">
                 <table
-                    class="table table-bordered {{ \Carbon\Carbon::parse($dateKey)->isToday() ? 'table-info' : 'table-secondary' }} table-hover text-center align-middle">
+                    class="table table-bordered {{ \App\Support\BusinessDate::isToday($dateKey) ? 'table-info' : 'table-secondary' }} table-hover text-center align-middle">
                     @if ($rows->isNotEmpty())
                         <thead class="table-dark">
                             <tr>

@@ -9,6 +9,10 @@ use App\Http\Controllers\CustomerPurchaseController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FruitController;
+use App\Http\Controllers\StrawberryController;
+use App\Http\Controllers\StrawberryCustomerPaymentController;
+use App\Http\Controllers\StrawberryCustomerPurchaseController;
+use App\Http\Controllers\StrawberryTruckController;
 use App\Http\Controllers\TruckController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,3 +92,52 @@ Route::prefix('customer-payments')->name('customer-payments.')->controller(Custo
     // AJAX daily balance retrieve
     Route::post('/daily/balance', 'dailyBalance')->name('daily.balance');
 });
+
+/**
+ * Strawberry Routes
+ */
+
+// Strawberry Dashboard
+Route::get('/strawberry', [StrawberryController::class, 'index'])
+    ->name('strawberry');
+
+// Strawberry Trucks
+Route::resource('strawberry-trucks', StrawberryTruckController::class)
+    ->parameters(['strawberry-trucks' => 'truck']);
+
+// Strawberry Customer Purchases
+Route::prefix('strawberry-customer-purchases')
+    ->name('strawberry-customer-purchases.')
+    ->controller(StrawberryCustomerPurchaseController::class)
+    ->group(function () {
+        Route::post('/store', 'store')->name('store');
+        Route::post('/update/{purchase}', 'update')->name('update');
+        Route::delete('/delete/{purchase}', 'destroy')->name('destroy');
+    });
+
+// Strawberry Customer Payments
+Route::prefix('strawberry-customer-payments')
+    ->name('strawberry-customer-payments.')
+    ->controller(StrawberryCustomerPaymentController::class)
+    ->group(function () {
+        // Dates index (distinct dates)
+        Route::get('/', 'index')->name('index');
+        // Payments for a date (payments-by-date page)
+        Route::get('/date/{date}', 'byDate')->name('byDate');
+        // Get single payment data (for edit modal)
+        Route::get('/payment/{payment}', 'payment')->name('payment');
+        // Store new single payment (AJAX)
+        Route::post('/store', 'store')->name('store');
+        // Update existing payment (AJAX)
+        Route::post('/update/{payment}', 'update')->name('update');
+        // Delete a payment (non-AJAX)
+        Route::delete('/delete/{payment}', 'destroy')->name('destroy');
+        // Daily/bulk page (إضافة يومية تحصيل)
+        Route::get('/daily/create', 'dailyCreate')->name('daily.create');
+        // Bulk store (daily submission)
+        Route::post('/daily/store', 'storeDaily')->name('daily.store');
+        // AJAX daily balance retrieve
+        Route::post('/daily/balance', 'dailyBalance')->name('daily.balance');
+        // Strawberry Payments Dashboard
+        Route::get('/dashboard', 'paymentsDashboard')->name('dashboard');
+    });
